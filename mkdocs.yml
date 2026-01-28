@@ -1,0 +1,41 @@
+site_name: SaaS Data Platform on Kubernetes
+
+nav:
+  - Home: index.md
+  # - Features:
+  #     - features/overview.md
+  # - Development:
+  #     - Overview: development/index.md
+  #     - development/index.md
+  #     - development/a-local-concept.md
+  #     - development/b-bootstraping-ca.md
+  #     - development/c-setup-dns.md
+  #     - development/e-install-local-kubernetes.md
+  # - Deployments:
+  #     - Overview: deployments/index.md
+
+theme:
+  name: material
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.sections
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+    - content.tabs.link
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true

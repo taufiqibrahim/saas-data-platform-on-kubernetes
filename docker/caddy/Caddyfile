@@ -1,0 +1,51 @@
+saas.local {
+	# respond "HTTPS OK saas.local"
+	reverse_proxy http://static:80
+	# tls internal
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.local:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
+ca.saas.local {
+	# respond "HTTPS OK saas.local"
+	tls internal
+	reverse_proxy 127.0.0.1:9000
+}
+
+docs.saas.local {
+	reverse_proxy http://mkdocs:8000
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.local:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
+api.saas.local {
+	respond "HTTPS OK api.saas.local"
+	tls internal
+}
+
+ui.saas.local {
+	respond "HTTPS OK ui.saas.local"
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.local:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}

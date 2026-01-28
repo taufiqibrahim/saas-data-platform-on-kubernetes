@@ -1,0 +1,129 @@
+name: saas
+
+networks:
+  saas:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+          gateway: 172.30.0.1
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.7
+    container_name: etcd
+    network_mode: host
+    environment:
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  coredns:
+    image: coredns/coredns
+    container_name: coredns
+    network_mode: host
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./docker/coredns:/etc/coredns
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - etcd
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  mkdocs:
+    image: squidfunk/mkdocs-material:latest
+    container_name: mkdocs
+    volumes:
+      - ./mkdocs.yml:/docs/mkdocs.yml
+      - ./docs:/docs/docs
+    command:
+      - serve
+      - --livereload
+      - --dev-addr=0.0.0.0:8000
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  static:
+    image: nginx:alpine
+    container_name: static
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/srv/saas:ro
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  step-ca-init:
+    image: smallstep/step-ca:latest
+    container_name: step-ca-init
+    profiles: ["init"]  # <--- This hides it from normal 'up'
+    network_mode: host
+    command: >
+      step ca init --name 'Local SaaS CA'
+      --provisioner admin
+      --dns localhost
+      --dns ca.saas.local
+      --address ':9000'
+      --issuer https://ca.saas.local:9000
+      --acme
+      --password-file /home/step/secrets/password
+    volumes:
+      - ./docker/step-ca:/home/step
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  step-ca:
+    image: smallstep/step-ca:latest
+    container_name: step-ca
+    network_mode: host
+    volumes:
+      - ./docker/step-ca:/home/step
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: caddy:2.10.2
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./docker/step-ca/certs:/step-ca-certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
