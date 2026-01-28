@@ -2,7 +2,9 @@
 
 > **Multi-tenant SaaS control plane and data platform that runs on any Kubernetes cluster.**
 
-**Local-first development**: Run a complete, production-like SaaS environment on your local machine with real DNS, TLS certificates, and multi-tenant isolation — then deploy the same configuration to AWS EKS, GCP GKE, or Azure AKS.
+**Local-first development**: Run a complete, production-like SaaS environment on your local machine 
+with real DNS, TLS certificates, and multi-tenant isolation — 
+then deploy the same configuration to AWS EKS, GCP GKE, or Azure AKS.
 
 ## Why Local-First?
 
@@ -10,7 +12,7 @@ Most SaaS examples either run only in the cloud (expensive, slow) or use oversim
 
 **This repository builds production patterns locally first:**
 
-- **Real DNS**: Local domain resolution (`.local.saas-platform.dev`)
+- **Real DNS**: Local domain resolution (`.saas.local`)
 - **Real TLS**: Certificate authority and leaf certificates
 - **Real Multi-tenancy**: Tenant isolation, namespaces, resource quotas
 - **Real Control Plane**: Tenant provisioning workflows
