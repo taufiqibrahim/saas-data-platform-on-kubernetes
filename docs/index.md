@@ -8,7 +8,7 @@ then deploy the same configuration to AWS EKS, GCP GKE, or Azure AKS.
 
 ## Why Local-First?
 
-Most SaaS examples either run only in the cloud (expensive, slow) or use oversimplified local setups that don't mirror production.
+Most SaaS examples either run only in the cloud (expensive, slower development) or use over-simplified local setups that don't mirror production.
 
 **This repository builds production patterns locally first:**
 
@@ -31,7 +31,7 @@ No cloud bills. No waiting for cloud provisioning. Full production experience on
 
 ## Getting Started
 
-Follow the step-by-step guides in [`docs/`](docs/):
+Follow the step-by-step guides in [`docs/getting-started`](./getting-started/):
 
 **Local Setup**:
 TODO

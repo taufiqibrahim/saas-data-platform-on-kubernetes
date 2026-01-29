@@ -1,0 +1,16 @@
+/* Main content text */
+
+.md-typeset {
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
+/* Keep your content width tweak */
+.md-content {
+  max-width: 900px;
+}
+
+/* Fix for ASCII art in code blocks */
+code, .rst-content tt, .rst-content code {
+  white-space: pre;
+}

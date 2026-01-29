@@ -2,17 +2,26 @@ site_name: SaaS Data Platform on Kubernetes
 
 nav:
   - Home: index.md
-  # - Features:
-  #     - features/overview.md
-  - Getting Started:
-  #     - Overview: development/index.md
-  #     - development/index.md
-      - getting-started/a-local-concept.md
-      - getting-started/b-bootstraping-ca.md
-      - getting-started/c-setup-dns.md
-      - getting-started/d-install-local-kubernetes-kind.md
-  # - Deployments:
-  #     - Overview: deployments/index.md
+
+  - Getting Started: 
+      - getting-started/index.md
+      - Making Domains Work:
+          - getting-started/01-making-domains-work/index.md
+          - getting-started/01-making-domains-work/01-local-concept.md
+          - getting-started/01-making-domains-work/02-bootstraping-ca.md
+          - getting-started/01-making-domains-work/03-setup-dns.md
+          - getting-started/01-making-domains-work/04-run-the-services.md
+      - Making Domains Work:
+          - getting-started/01-making-domains-work/index.md
+          - getting-started/01-making-domains-work/01-local-concept.md
+          - getting-started/01-making-domains-work/02-bootstraping-ca.md
+          - getting-started/01-making-domains-work/03-setup-dns.md
+      - Making Domains Work:
+          - getting-started/01-making-domains-work/index.md
+          - getting-started/01-making-domains-work/01-local-concept.md
+          - getting-started/01-making-domains-work/02-bootstraping-ca.md
+          - getting-started/01-making-domains-work/03-setup-dns.md
+
 
 theme:
   name: material

@@ -1,28 +1,36 @@
-# Bootstrapping the Root Certificate using Step CA
+# Root Certificate
 
-In this section, we set up **Step CA** as a **local private Certificate Authority (CA)** and establish trust on the host machine.
+In this section, we’ll set up a **local private Certificate Authority (CA)** using [Step CA](https://smallstep.com/docs/step-ca/) and establish trust on your host machine.
+
+Step CA is a private CA for automated management of **X.509 TLS certificates** and SSH keys, perfect for local development.
+
+## What You’ll Achieve
 
 By the end of this section:
 
-* Step CA is running locally
-* A **single root CA** is created
-* The root CA is trusted by the OS and browser
-* Any certificate issued by Step CA is trusted automatically
+- Step CA is running locally  
+- A single **root CA** is created  
+- The root CA is trusted by your OS and browser  
+- Any certificate issued by Step CA is automatically trusted
 
 ## Architecture Overview
 
 ```
-┌──────────────┐
-│   Browser    │
-└──────┬───────┘
-       │ trusts
-┌──────▼───────┐
-│   Step CA    │  ← Root CA
-└──────┬───────┘
-       │ issues certs
-┌──────▼─────────────┐
-│ Caddy / Ingress    │
-└────────────────────┘
++-------------+
+|   Browser   |
++------+------+
+       |
+       | trusts
+       |
++------v------+
+|   Step CA   |  <--- Root CA
++------+------+
+       |
+       | issues certs
+       |
++------v--------+
+| Caddy/Ingress |
++---------------+
 ```
 
 > ⚠️ Important:
