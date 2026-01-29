@@ -11,11 +11,11 @@ The system is designed to support a SaaS-style hostname structure such as:
 
 | Domain | Usage |
 | --- | --- |
-| [https://docs.saas.test](https://docs.saas.test) | This documentation runs locally |
-| [https://api.saas.test](https://api.saas.test) | - |
-| [https://ui.saas.test](https://ui.saas.test) | - |
-| [https://tenant1.saas.test](https://tenant1.saas.test) | - |
-| [https://app1.tenant1.saas.test](https://app1.tenant1.saas.test) | - |
+| [https://docs.saas.local](https://docs.saas.local) | This documentation runs locally |
+| [https://api.saas.local](https://api.saas.local) | - |
+| [https://ui.saas.local](https://ui.saas.local) | - |
+| [https://tenant1.saas.local](https://tenant1.saas.local) | - |
+| [https://app1.tenant1.saas.local](https://app1.tenant1.saas.local) | - |
 
 All domains are resolved via local authoritative DNS and served over HTTPS using certificates trusted by the developer’s OS and browser.
 
@@ -24,7 +24,7 @@ All domains are resolved via local authoritative DNS and served over HTTPS using
 The architecture is built from the following roles:
 
 - **CoreDNS**  
-  Owns the local `saas.test` DNS zone and serves authoritative DNS records.
+  Owns the local `saas.local` DNS zone and serves authoritative DNS records.
 
 - **Step CA**  
   Perform certificate management and root certificate creation.
@@ -69,7 +69,7 @@ The architecture ensures:
 ```
 Browser
   ↓
-DNS Query (api.saas.test)
+DNS Query (api.saas.local)
   ↓
 PowerDNS (Authoritative)
   ↓
@@ -92,7 +92,7 @@ Control plane:
 ### Zone
 
 ```
-saas.test
+saas.local
 ```
 
 Managed **only** by PowerDNS (authoritative).
@@ -124,26 +124,26 @@ Managed **only** by PowerDNS (authoritative).
 ### SaaS-level wildcard
 
 ```
-*.saas.test
+*.saas.local
 ```
 
 Covers:
 
-* `api.saas.test`
-* `ui.saas.test`
-* `tenant1.saas.test`
+* `api.saas.local`
+* `ui.saas.local`
+* `tenant1.saas.local`
 
 ### Tenant-level wildcard (per tenant)
 
 ```
-*.tenant1.saas.test
-*.tenant2.saas.test
+*.tenant1.saas.local
+*.tenant2.saas.local
 ```
 
 Covers:
 
-* `app1.tenant1.saas.test`
-* `app2.tenant1.saas.test`
+* `app1.tenant1.saas.local`
+* `app2.tenant1.saas.local`
 
 ### Why Two Wildcards?
 
@@ -151,8 +151,8 @@ TLS wildcards only match **one DNS label**.
 
 | Certificate           | Valid                    | Invalid                  |
 | --------------------- | ------------------------ | ------------------------ |
-| `*.saas.test`         | `api.saas.test`          | `app1.tenant1.saas.test` |
-| `*.tenant1.saas.test` | `app1.tenant1.saas.test` | `x.y.tenant1.saas.test`  |
+| `*.saas.local`         | `api.saas.local`          | `app1.tenant1.saas.local` |
+| `*.tenant1.saas.local` | `app1.tenant1.saas.local` | `x.y.tenant1.saas.local`  |
 
 This mirrors real SaaS production setups.
 

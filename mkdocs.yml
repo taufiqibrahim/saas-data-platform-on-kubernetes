@@ -4,13 +4,13 @@ nav:
   - Home: index.md
   # - Features:
   #     - features/overview.md
-  # - Development:
+  - Getting Started:
   #     - Overview: development/index.md
   #     - development/index.md
-  #     - development/a-local-concept.md
-  #     - development/b-bootstraping-ca.md
-  #     - development/c-setup-dns.md
-  #     - development/e-install-local-kubernetes.md
+      - getting-started/a-local-concept.md
+      - getting-started/b-bootstraping-ca.md
+      - getting-started/c-setup-dns.md
+      - getting-started/d-install-local-kubernetes-kind.md
   # - Deployments:
   #     - Overview: deployments/index.md
 

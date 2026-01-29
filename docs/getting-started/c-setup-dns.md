@@ -3,10 +3,10 @@
 This guide describes how to implement the Local DNS part.
 
 At the end of this section we will have (but not limited to):
-- saas.test
-- app.saas.test
-- api.saas.test
-- harbor.saas.test
+- saas.local
+- app.saas.local
+- api.saas.local
+- harbor.saas.local
 
 Can be resolved locally from host machine and containers.
 
@@ -26,7 +26,7 @@ The running services are:
 
 ### Step CA
 - Runing on `network_mode: host` on host's port 9000.
-- Accessible on https://localhost:9000 and https://ca.saas.test:9000
+- Accessible on https://localhost:9000 and https://ca.saas.local:9000
 
 
 ## Note on WSL
