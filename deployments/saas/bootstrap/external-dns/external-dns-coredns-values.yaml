@@ -1,0 +1,44 @@
+
+# ref: https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/values.yaml
+provider:
+  name: coredns
+
+# Environment variables for etcd connection
+env:
+  # - name: ETCD_URLS
+    # Replace <DOCKER_HOST_IP> with your Docker host IP address
+    # For example: http://192.168.1.100:2379
+    # value: "http://<DOCKER_HOST_IP>:2379"
+
+
+txtOwnerId: saas-cluster
+txtPrefix: external-dns-
+# Filter resources queried for endpoints by annotation, using label selector semantics
+annotationFilter: cluster-name=saas-cluster
+
+# Domain filters - only manage these domains
+domainFilters:
+  - saas.local
+
+# Sources define what ExternalDNS will use to discover endpoints
+sources:
+  - service
+
+# Policy options
+policy: sync
+
+logLevel: info
+interval: 1m
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Optional: tune resource requests
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

@@ -3,19 +3,19 @@ site_name: SaaS Data Platform on Kubernetes
 nav:
   - Home: index.md
 
-  - Getting Started: 
+  - Getting Started:
       - getting-started/index.md
       - Making Domains Work:
           - getting-started/01-making-domains-work/index.md
           - getting-started/01-making-domains-work/01-local-concept.md
-          - getting-started/01-making-domains-work/02-bootstraping-ca.md
-          - getting-started/01-making-domains-work/03-setup-dns.md
+          - getting-started/01-making-domains-work/02-ca-bootstraping.md
+          - getting-started/01-making-domains-work/03-dns-setup.md
           - getting-started/01-making-domains-work/04-run-the-services.md
-      - Making Domains Work:
-          - getting-started/01-making-domains-work/index.md
-          - getting-started/01-making-domains-work/01-local-concept.md
-          - getting-started/01-making-domains-work/02-bootstraping-ca.md
-          - getting-started/01-making-domains-work/03-setup-dns.md
+      - Running the SaaS:
+          - getting-started/02-running-the-saas/index.md
+          - getting-started/02-running-the-saas/01-saas-cluster.md
+          - getting-started/02-running-the-saas/02-configure-gitops.md
+          - getting-started/02-running-the-saas/03-configure-registry.md
       - Making Domains Work:
           - getting-started/01-making-domains-work/index.md
           - getting-started/01-making-domains-work/01-local-concept.md
@@ -34,6 +34,7 @@ theme:
     - navigation.sections
     - navigation.instant
     - navigation.top
+    - navigation.footer
     - content.code.copy
     - search.highlight
     - search.suggest

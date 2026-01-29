@@ -1,7 +1,5 @@
 saas.local {
-	# respond "HTTPS OK saas.local"
 	reverse_proxy http://static:80
-	# tls internal
 	tls {
 		issuer acme {
 			# The internal URL of your step-ca container
@@ -14,7 +12,6 @@ saas.local {
 }
 
 ca.saas.local {
-	# respond "HTTPS OK saas.local"
 	tls internal
 	reverse_proxy 127.0.0.1:9000
 }

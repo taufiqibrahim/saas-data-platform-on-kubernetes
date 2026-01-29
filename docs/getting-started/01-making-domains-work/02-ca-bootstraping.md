@@ -1,4 +1,4 @@
-# Root Certificate
+# Private Certificate
 
 In this section, we’ll set up a **local private Certificate Authority (CA)** using [Step CA](https://smallstep.com/docs/step-ca/) and establish trust on your host machine.
 
