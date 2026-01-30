@@ -11,6 +11,7 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  etcd_data:
   zot_data:
 
 services:
@@ -22,6 +23,8 @@ services:
       - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
       - ETCD_ADVERTISE_CLIENT_URLS=http://192.168.1.4:2379
       - ETCD_LOG_LEVEL=debug
+    volumes:
+      - etcd_data:/var/lib/etcd # Add volume mapping so DNS records will survive on pod restart
     restart: always
     logging:
       driver: "json-file"
@@ -141,6 +144,7 @@ services:
     volumes:
       - ./docker/zot/zot-config.json:/etc/zot/config.json:ro
       - ./docker/zot/htpasswd:/auth/data/htpasswd:ro
+      - ./docker/zot/credentials.json:/etc/zot/credentials.json:ro
       - zot_data:/var/lib/zot
     restart: always
     logging:
