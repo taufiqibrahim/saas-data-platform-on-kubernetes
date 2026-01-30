@@ -16,7 +16,7 @@ spec:
       containers:
         - name: netshoot
           image: nicolaka/netshoot:latest
-          # command: ["sleep", "36000"]
+          command: ["sleep", "infinity"]
           imagePullPolicy: Always
           resources:
             limits:

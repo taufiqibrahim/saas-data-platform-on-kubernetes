@@ -1,6 +1,8 @@
-# OpenBao Local (Prod-Like) Setup — Single Operator
+# Secret Provider
 
-## Goal
+## OpenBao Local (Prod-Like) Setup — Single Operator
+
+### Goal
 
 Run OpenBao locally in a way that:
 
@@ -9,7 +11,7 @@ Run OpenBao locally in a way that:
 * Avoids dev shortcuts
 * Is operable by **one person**
 
-## Architecture (local)
+### Architecture (local)
 
 ```
 Browser / CLI
@@ -22,7 +24,7 @@ Browser / CLI
 (file / raft storage)
 ```
 
-## 1. Prerequisites
+### 1. Prerequisites
 
 * Docker + Docker Compose
 * Step CA running locally
@@ -33,16 +35,16 @@ Browser / CLI
   127.0.0.1 bao.saas.local
   ```
 
-## 2. OpenBao configuration
+### 2. OpenBao configuration
 
-### Key choices
+#### Key choices
 
 * ❌ No `-dev` mode
 * ✅ Persistent storage
 * ✅ Manual unseal
 * ✅ TLS terminated at Caddy
 
-### Storage
+#### Storage
 
 ```hcl
 storage "file" {
@@ -50,9 +52,9 @@ storage "file" {
 }
 ```
 
-## 3. Initialization (one time)
+### 3. Initialization (one time)
 
-### Initialization parameters
+#### Initialization parameters
 
 ```
 Key shares:     5
@@ -65,7 +67,7 @@ Why:
 * Allows loss tolerance
 * Enforces deliberate recovery
 
-## 4. Immediate post-init steps (DO NOT SKIP)
+### 4. Immediate post-init steps (DO NOT SKIP)
 
 1. **Unseal OpenBao** using any 3 keys
 2. Login with root token
@@ -75,7 +77,7 @@ Why:
 
 Root token should **never** be used daily.
 
-## 5. TLS model
+### 5. TLS model
 
 * Step CA is **single root of trust**
 * Caddy issues HTTPS cert for `bao.saas.local`
@@ -84,7 +86,7 @@ Root token should **never** be used daily.
   * Client cert auth
   * Future mTLS workloads
 
-## 6. Authentication strategy (dev → prod parity)
+### 6. Authentication strategy (dev → prod parity)
 
 | Auth method        | Purpose               |
 | ------------------ | --------------------- |
@@ -93,7 +95,7 @@ Root token should **never** be used daily.
 | OIDC (later)       | Humans                |
 | Kubernetes (later) | Workloads             |
 
-## 7. What belongs in OpenBao (even for local dev)
+### 7. What belongs in OpenBao (even for local dev)
 
 Store **only things that benefit from**:
 
@@ -101,7 +103,7 @@ Store **only things that benefit from**:
 * Access control
 * Auditing
 
-### Good candidates
+#### Good candidates
 
 * API keys (Stripe, GitHub, OpenAI)
 * DB credentials
@@ -110,14 +112,14 @@ Store **only things that benefit from**:
 * Signing keys
 * Webhook secrets
 
-### Do NOT store
+#### Do NOT store
 
 * Build artifacts
 * Source code
 * Large blobs
 * User data
 
-## 8. Backup strategy (single person)
+### 8. Backup strategy (single person)
 
 You must back up **two things only**:
 
@@ -126,7 +128,7 @@ You must back up **two things only**:
 
 If both are lost → **data is unrecoverable**.
 
-## 9. Restart procedure (know this by heart)
+### 9. Restart procedure (know this by heart)
 
 ```text
 Start containers
@@ -137,7 +139,7 @@ Start containers
 
 If this feels painful — that’s intentional.
 
-## 10. When to change things
+### 10. When to change things
 
 | Change      | Trigger            |
 | ----------- | ------------------ |
@@ -150,28 +152,28 @@ If this feels painful — that’s intentional.
 
 Keep this in **local encrypted notes** (not in git).
 
-## A. OpenBao recovery info
+### A. OpenBao recovery info
 
 * Where unseal keys are stored
 * Which 3 of 5 you normally use
 * Storage backend (`file`, path)
 * How to start & unseal
 
-## B. Trust & PKI
+### B. Trust & PKI
 
 * Step CA root fingerprint
 * ACME endpoint URL
 * Which services trust Step CA
 * Cert lifetimes
 
-## C. Auth & access
+### C. Auth & access
 
 * Admin policy name
 * Admin token creation command
 * Where admin token is stored
 * Token TTL expectations
 
-## D. Secrets inventory (VERY useful)
+### D. Secrets inventory (VERY useful)
 
 For each secret:
 
@@ -185,7 +187,7 @@ Downstream impact:
 
 This becomes gold in real prod.
 
-## E. Disaster drills (yes, even solo)
+### E. Disaster drills (yes, even solo)
 
 Write answers to:
 
@@ -193,7 +195,7 @@ Write answers to:
 * If token leaks, what do I rotate?
 * If Step CA dies, what still works?
 
-## Mental model (important)
+### Mental model (important)
 
 Think of this setup as:
 
@@ -201,7 +203,7 @@ Think of this setup as:
 
 You are practicing **operating discipline**, not just running software.
 
-## TL;DR
+### TL;DR
 
 * Use **5 / 3**
 * Avoid dev mode

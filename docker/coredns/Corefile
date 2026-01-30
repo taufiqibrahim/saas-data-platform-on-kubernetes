@@ -8,6 +8,7 @@ saas.local {
         {$HOST_IP} ca.saas.local
         {$HOST_IP} docs.saas.local
         {$HOST_IP} ui.saas.local
+        {$HOST_IP} zot.saas.local
         fallthrough
     }
 

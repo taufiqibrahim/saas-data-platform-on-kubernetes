@@ -105,11 +105,20 @@ kubectl apply -f deployments/saas/bootstrap/netshoot.yaml
 # echo ""
 # echo -e "${GREEN}Adding Helm repositories...${NC}"
 # helm repo add jetstack https://charts.jetstack.io
+helm repo add external-secrets https://charts.external-secrets.io
 # helm repo add argo https://argoproj.github.io/argo-helm
 # helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
 # helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 
 # # helm repo update
+
+# echo ""
+echo -e "${GREEN}Step 1: Installing external secret operator${NC}"
+helm install external-secrets \
+   external-secrets/external-secrets \
+    -n external-secrets \
+    --create-namespace \
+    # --set installCRDs=false
 
 # echo ""
 # echo -e "${GREEN}Step 1: Installing cert-manager${NC}"

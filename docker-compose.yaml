@@ -11,7 +11,7 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
-  # openbao_data:
+  zot_data:
 
 services:
   etcd:
@@ -112,6 +112,43 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  openbao:
+    image: quay.io/openbao/openbao:latest
+    container_name: openbao
+    cap_add:
+      - IPC_LOCK
+    user: "100:1000"
+    command: server -config=/bao/config/config.hcl
+    volumes:
+      - ./docker/openbao/config.hcl:/bao/config/config.hcl:ro
+      - ./docker/openbao/data:/mnt/openbao/data
+    depends_on:
+      - step-ca
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  zot:
+    image: ghcr.io/project-zot/zot:v2.1.14
+    container_name: zot
+    ports:
+      - "5000:5000"
+    depends_on:
+      - step-ca
+    volumes:
+      - ./docker/zot/zot-config.json:/etc/zot/config.json:ro
+      - ./docker/zot/htpasswd:/auth/data/htpasswd:ro
+      - zot_data:/var/lib/zot
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   caddy:
     image: caddy:2.10.2
     container_name: caddy
@@ -126,27 +163,6 @@ services:
     depends_on:
       - step-ca
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  openbao:
-    image: quay.io/openbao/openbao:latest
-    container_name: openbao
-    cap_add:
-      - IPC_LOCK
-    user: "100:1000"
-    command: server -config=/bao/config/config.hcl
-    # ports:
-    #   - "8200:8200"
-    volumes:
-      - ./docker/openbao/config.hcl:/bao/config/config.hcl:ro
-      - ./docker/openbao/data:/mnt/openbao/data
-    depends_on:
-      - step-ca
-    restart: unless-stopped
     logging:
       driver: "json-file"
       options:

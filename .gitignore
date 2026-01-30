@@ -8,6 +8,7 @@ certs/
 _data/
 docker/step-ca
 docker/openbao/data
+docker/zot/htpasswd
 
 # environment
 .env

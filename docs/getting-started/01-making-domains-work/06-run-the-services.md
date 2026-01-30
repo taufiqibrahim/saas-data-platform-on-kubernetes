@@ -16,17 +16,32 @@ Start the services using `docker compose up`.
 docker compose up -d
 ```
 
-The running services are:
+The running services explained as follows:
 
-### CoreDNS
+## CoreDNS
 - Runing on `network_mode: host` on host's port 53.
 - Depends on `etcd` service which is defined on the same `docker-compose.yml`
 - Using Corefile which is mounted from `docker/coredns/Corefile`
 
-### Step CA
+## Step CA
 - Runing on `network_mode: host` on host's port 9000.
 - Accessible on https://localhost:9000 and https://ca.saas.local:9000
 
+## Zot
+### Login to zot via web UI
+- Go to [https://zot.saas.local](https://zot.saas.local)
+- Authenticate using username and password defined in [Registry](./05-registry.md)
+
+### Common Tasks with Zot
+```bash
+crane auth login -u zot -p <password> zot.saas.local
+```
+
+#### Copy an OCI image to a zot docker registry
+This example pulls the latest container image for the alpine application and stores the image to a local private docker registry.
+```bash
+crane copy alpine:latest zot.saas.local/alpine:latest
+```
 
 ## Note on WSL
 

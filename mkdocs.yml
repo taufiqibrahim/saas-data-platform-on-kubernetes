@@ -10,7 +10,9 @@ nav:
           - getting-started/01-making-domains-work/01-local-concept.md
           - getting-started/01-making-domains-work/02-ca-bootstraping.md
           - getting-started/01-making-domains-work/03-dns-setup.md
-          - getting-started/01-making-domains-work/04-run-the-services.md
+          - getting-started/01-making-domains-work/04-secret-provider.md
+          - getting-started/01-making-domains-work/05-registry.md
+          - getting-started/01-making-domains-work/06-run-the-services.md
       - Running the SaaS:
           - getting-started/02-running-the-saas/index.md
           - getting-started/02-running-the-saas/01-saas-cluster.md
