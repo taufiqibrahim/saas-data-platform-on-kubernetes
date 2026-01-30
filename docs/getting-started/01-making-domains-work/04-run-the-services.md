@@ -2,6 +2,15 @@
 
 ## Run The Services
 
+Create required directories:
+```bash
+# ! docker/step-ca directory is ignored by .gitignore
+mkdir -p docker/openbao/data
+
+# Update directory ownership
+sudo chown -R 100:1000 docker/openbao/data
+```
+
 Start the services using `docker compose up`.
 ```bash
 docker compose up -d

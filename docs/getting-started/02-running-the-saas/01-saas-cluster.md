@@ -48,4 +48,26 @@ In order to interact with a specific cluster, we need to specify the cluster nam
 kubectl config use-context kind-tenant-cluster
 ```
 
+## Preparing Secrets
+
+Setup `ghcr.io` pull secret
+```bash
+kubectl create secret docker-registry dockerio-pull-secret \
+  --docker-server=ghcr.io \
+  --docker-username=YOUR_GITHUB_USERNAME \
+  --docker-password=YOUR_GITHUB_PAT \
+  --docker-email=any@email.com \
+  -n default
+```
+
+Setup `docker.io` pull secret
+```bash
+kubectl create secret docker-registry ghcr-secret \
+  --docker-server=docker.io \
+  --docker-username=YOUR_DOCKER_USERNAME \
+  --docker-password=YOUR_DOCKER_PAT \
+  --docker-email=any@email.com \
+  -n default
+```
+
 Now we're ready to use the cluster.

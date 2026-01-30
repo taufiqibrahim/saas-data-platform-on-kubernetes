@@ -4,6 +4,7 @@ saas.local {
 
     hosts {
         {$HOST_IP} saas.local
+        {$HOST_IP} bao.saas.local
         {$HOST_IP} ca.saas.local
         {$HOST_IP} docs.saas.local
         {$HOST_IP} ui.saas.local
@@ -13,7 +14,8 @@ saas.local {
     # We use the /skydns path to stay compatible with external-dns
     etcd {
         path /skydns
-        endpoint http://127.0.0.1:2379
+        # endpoint http://127.0.0.1:2379
+        endpoint http://192.168.1.4:2379
     }
     # This allows CoreDNS to respond to the cluster even if 
     # a specific record isn't in etcd yet

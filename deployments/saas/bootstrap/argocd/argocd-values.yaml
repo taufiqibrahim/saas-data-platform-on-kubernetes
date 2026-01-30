@@ -2,6 +2,10 @@
 global:
   domain: argocd.saas.local
 configs:
+  cm:
+    timeout.reconciliation: 30s
+    url: https://argocd.saas.local
+    application.instanceLabelKey: argocd.argoproj.io/instance
   params:
     server.insecure: true
 dex:
