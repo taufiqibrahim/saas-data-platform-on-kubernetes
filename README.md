@@ -12,7 +12,7 @@ Most SaaS examples either run only in the cloud (expensive, slower development) 
 
 **This repository builds production patterns locally first:**
 
-- **Real DNS**: Local domain resolution (`.saas.local`)
+- **Real DNS**: Local domain resolution (`.saas.internal`)
 - **Real TLS**: Certificate authority and leaf certificates
 - **Real Multi-tenancy**: Tenant isolation, namespaces, resource quotas
 - **Real Control Plane**: Tenant provisioning workflows
@@ -42,7 +42,7 @@ TODO
 
 ## Architecture
 ```
-Host Machine (*.saas.local)
+Host Machine (*.saas.internal)
 │
 ├─ Docker Containers
 │  ├─ DNS Server (local domain resolution)

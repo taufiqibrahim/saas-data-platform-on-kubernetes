@@ -25,22 +25,22 @@ The running services explained as follows:
 
 ## Step CA
 - Runing on `network_mode: host` on host's port 9000.
-- Accessible on https://localhost:9000 and https://ca.saas.local:9000
+- Accessible on https://localhost:9000 and https://ca.saas.internal:9000
 
 ## Zot
 ### Login to zot via web UI
-- Go to [https://zot.saas.local](https://zot.saas.local)
+- Go to [https://zot.saas.internal](https://zot.saas.internal)
 - Authenticate using username and password defined in [Registry](./05-registry.md)
 
 ### Common Tasks with Zot
 ```bash
-crane auth login -u zot -p <password> zot.saas.local
+crane auth login -u zot -p <password> zot.saas.internal
 ```
 
 #### Copy an OCI image to a zot docker registry
 This example pulls the latest container image for the alpine application and stores the image to a local private docker registry.
 ```bash
-crane copy alpine:latest zot.saas.local/alpine:latest
+crane copy alpine:latest zot.saas.internal/alpine:latest
 ```
 
 ## Note on WSL

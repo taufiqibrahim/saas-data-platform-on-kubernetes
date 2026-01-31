@@ -42,10 +42,21 @@ By the end of this section:
 
 ## Step 1 — Create Step CA Data Directory and Password
 
+```bash
+# Create directory structure with correct permissions in one command
+mkdir -p docker/step-ca/secrets && sudo chown -R 1000:1000 docker/step-ca
+
+# Create password file securely
+read -rsp "Enter step-ca password: " STEPCA_PASSWORD \
+ && echo "$STEPCA_PASSWORD" > docker/step-ca/secrets/password \
+ && unset STEPCA_PASSWORD && echo
+
+```
+
 Create a working directory:
 ```bash
 # ! docker/step-ca directory is ignored by .gitignore
-mkdir -p docker/step-ca/secrets
+mkdir -p docker/step-ca/secrets && sudo chown -R 1000:1000 docker/step-ca
 ```
 
 Create step-ca password file. Change the password as you need.
@@ -67,11 +78,28 @@ We run Step CA as a **Docker container**, so it is:
 * Isolated
 * Identical across OSes
 
-We will initialize Step CA **inside the container**.
+We will initialize Step CA using Docker container which writes to `docker/step-ca` we created earlier and mount the resulting init configuration on a Docker volume.
 
 Run:
 ```bash
+docker compose run --rm step-ca-bootstrap
+docker compose run --rm step-ca-cli step ca init
 docker compose run --rm step-ca-init
+```
+
+You will be prompted and can fill like follows:
+```
+✔ Deployment Type: Standalone
+What would you like to name your new PKI?
+✔ (e.g. Smallstep): Saas Local
+What DNS names or IP addresses will clients use to reach your CA?
+✔ (e.g. ca.example.com[,10.1.2.3,etc.]): ca.saas.internal
+What IP and port will your new CA bind to? (:443 will bind to 0.0.0.0:443)
+✔ (e.g. :443 or 127.0.0.1:443): :9000
+What would you like to name the CA's first provisioner?
+✔ (e.g. you@smallstep.com): admin@saas.internal█
+Choose a password for your CA keys and first provisioner.
+✔ [leave empty and we'll generate one]: <just ENTER to let it generate>
 ```
 
 All data generated is stored in `docker/step-ca` directory.
@@ -86,7 +114,7 @@ All data generated is stored in `docker/step-ca` directory.
 ├── db                             # Database folder
 ├── secrets
 │   ├── intermediate_ca_key        # Intermediate private key
-│   ├── password
+│   ├── password                   # Password content
 │   └── root_ca_key                # Root private key
 └── templates
 ```
@@ -107,6 +135,21 @@ Verify:
 sudo openssl verify /usr/local/share/ca-certificates/saas-ca.crt
 # Should output
 # /usr/local/share/ca-certificates/saas-ca.crt: OK
+```
+
+#### Google Chrome
+Special treatment needed on Google Chrome since it uses NSS (Network Security Services) database, not the system store
+
+```bash
+# Install certutil if not already installed
+sudo apt install libnss3-tools
+
+# Add the certificate to Chrome's NSS database
+sudo certutil -d sql:$HOME/.pki/nssdb -D -n "SaaS Local CA"
+sudo certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "SaaS Local CA" -i /usr/local/share/ca-certificates/saas-ca.crt
+
+# Verify it was added
+certutil -d sql:$HOME/.pki/nssdb -L
 ```
 
 ### macOS

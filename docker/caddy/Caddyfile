@@ -1,9 +1,9 @@
-saas.local {
+saas.internal {
 	reverse_proxy http://static:80
 	tls {
 		issuer acme {
 			# The internal URL of your step-ca container
-			dir https://ca.saas.local:9000/acme/acme/directory
+			dir https://ca.saas.internal:9000/acme/acme/directory
 
 			# Caddy MUST trust the step-ca root certificate to talk to it
 			trusted_roots /step-ca-certs/root_ca.crt
@@ -11,12 +11,12 @@ saas.local {
 	}
 }
 
-zot.saas.local {
+zot.saas.internal {
 	reverse_proxy http://zot:5000
 	tls {
 		issuer acme {
 			# The internal URL of your step-ca container
-			dir https://ca.saas.local:9000/acme/acme/directory
+			dir https://ca.saas.internal:9000/acme/acme/directory
 
 			# Caddy MUST trust the step-ca root certificate to talk to it
 			trusted_roots /step-ca-certs/root_ca.crt
@@ -24,12 +24,12 @@ zot.saas.local {
 	}
 }
 
-bao.saas.local {
+bao.saas.internal {
 	reverse_proxy http://openbao:8200
 	tls {
 		issuer acme {
 			# The internal URL of your step-ca container
-			dir https://ca.saas.local:9000/acme/acme/directory
+			dir https://ca.saas.internal:9000/acme/acme/directory
 
 			# Caddy MUST trust the step-ca root certificate to talk to it
 			trusted_roots /step-ca-certs/root_ca.crt
@@ -37,17 +37,17 @@ bao.saas.local {
 	}
 }
 
-ca.saas.local {
+ca.saas.internal {
 	tls internal
 	reverse_proxy 127.0.0.1:9000
 }
 
-docs.saas.local {
+docs.saas.internal {
 	reverse_proxy http://mkdocs:8000
 	tls {
 		issuer acme {
 			# The internal URL of your step-ca container
-			dir https://ca.saas.local:9000/acme/acme/directory
+			dir https://ca.saas.internal:9000/acme/acme/directory
 
 			# Caddy MUST trust the step-ca root certificate to talk to it
 			trusted_roots /step-ca-certs/root_ca.crt
@@ -55,17 +55,17 @@ docs.saas.local {
 	}
 }
 
-api.saas.local {
-	respond "HTTPS OK api.saas.local"
+api.saas.internal {
+	respond "HTTPS OK api.saas.internal"
 	tls internal
 }
 
-ui.saas.local {
-	respond "HTTPS OK ui.saas.local"
+ui.saas.internal {
+	respond "HTTPS OK ui.saas.internal"
 	tls {
 		issuer acme {
 			# The internal URL of your step-ca container
-			dir https://ca.saas.local:9000/acme/acme/directory
+			dir https://ca.saas.internal:9000/acme/acme/directory
 
 			# Caddy MUST trust the step-ca root certificate to talk to it
 			trusted_roots /step-ca-certs/root_ca.crt

@@ -50,7 +50,7 @@ kubectl logs -n cert-manager deployment/cert-manager --tail=100
 #### A. step-ca cannot reach the cluster for HTTP-01 challenge
 ```bash
 # Test if step-ca can access the challenge endpoint
-# The challenge will be at: http://argocd.saas.local/.well-known/acme-challenge/<token>
+# The challenge will be at: http://argocd.saas.internal/.well-known/acme-challenge/<token>
 
 # Check if ingress is accessible from step-ca host
 curl -v http://<LOADBALANCER_IP>/.well-known/acme-challenge/test
@@ -151,7 +151,7 @@ kubectl get ingress argocd-server-ingress -n argocd -o yaml | grep external-dns
 
 Should see:
 ```yaml
-external-dns.alpha.kubernetes.io/hostname: argocd.saas.local
+external-dns.alpha.kubernetes.io/hostname: argocd.saas.internal
 external-dns.alpha.kubernetes.io/ttl: "300"
 ```
 
@@ -159,7 +159,7 @@ external-dns.alpha.kubernetes.io/ttl: "300"
 **Solution:** Ensure the domain in your ingress matches the domainFilters in external-dns-values.yaml:
 ```yaml
 domainFilters:
-  - saas.local
+  - saas.internal
 ```
 
 ### 3. 502 Bad Gateway
@@ -332,10 +332,10 @@ echo -e "\n=== LoadBalancer IP ==="
 kubectl get svc -n ingress-nginx ingress-nginx-controller | grep LoadBalancer
 
 echo -e "\n=== DNS Resolution ==="
-nslookup argocd.saas.local
+nslookup argocd.saas.internal
 
 echo -e "\n=== HTTPS Test ==="
-curl -v https://argocd.saas.local 2>&1 | grep -E "subject:|issuer:|SSL"
+curl -v https://argocd.saas.internal 2>&1 | grep -E "subject:|issuer:|SSL"
 ```
 
 ## Getting Help

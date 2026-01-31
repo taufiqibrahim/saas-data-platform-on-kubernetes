@@ -5,9 +5,9 @@ This guide describes how this repository implement the Local DNS part.
 ## Goals
 We will have (but not limited to):
 
-- `saas.local`
-- `ca.saas.local`
-- `docs.saas.local`
+- `saas.internal`
+- `ca.saas.internal`
+- `docs.saas.internal`
 - and we can add more...
 
 Those domains can be resolved locally from host machine and containers.
@@ -27,7 +27,7 @@ Since this stack goal is to enable full-production-like SaaS deployment 100% loc
 
 This stack runs CoreDNS as external service to the the Kubernetes clusters, as Docker service as can be checked on the `docker-compose.yaml` file. Meaning it is easily to be reconfigured using other DNS providers supported by ExternalDNS.
 
-CoreDNS allows static mapping via Corefile (available on `docker/coredns/Corefile`) to define some initial static domain such as `docs.saas.local`. Since we need something dynamic, that's why we need the accompanying service: **etcd**.
+CoreDNS allows static mapping via Corefile (available on `docker/coredns/Corefile`) to define some initial static domain such as `docs.saas.internal`. Since we need something dynamic, that's why we need the accompanying service: **etcd**.
 
 ### etcd
 **[etcd](https://etcd.io/)** is a distributed, reliable key-value store for the most critical data of a distributed system. It is a core component of Kubernetes, serving as the primary database that stores the entire cluster state, configuration, and metadata—essentially the control plane's source of truth.

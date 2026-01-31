@@ -11,5 +11,5 @@ listener "tcp" {
   tls_disable     = true
 }
 
-api_addr = "https://bao.saas.local"
+api_addr = "https://bao.saas.internal"
 cluster_addr = "https://openbao:8201"

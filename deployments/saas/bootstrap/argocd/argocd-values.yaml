@@ -1,10 +1,10 @@
 # Argocd SSL Termination at Ingress Controller
 global:
-  domain: argocd.saas.local
+  domain: argocd.saas.internal
 configs:
   cm:
     timeout.reconciliation: 30s
-    url: https://argocd.saas.local
+    url: https://argocd.saas.internal
     application.instanceLabelKey: argocd.argoproj.io/instance
   params:
     server.insecure: true
@@ -20,6 +20,8 @@ applicationSet:
   replicas: 1
 server:
   replicas: 1
+  # service:
+  #   type: LoadBalancer
   ingress:
     enabled: false
 

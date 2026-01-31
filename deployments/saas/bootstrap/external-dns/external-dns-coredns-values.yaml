@@ -18,7 +18,7 @@ annotationFilter: cluster-name=saas-cluster
 
 # Domain filters - only manage these domains
 domainFilters:
-  - saas.local
+  - saas.internal
 
 # Sources define what ExternalDNS will use to discover endpoints
 sources:

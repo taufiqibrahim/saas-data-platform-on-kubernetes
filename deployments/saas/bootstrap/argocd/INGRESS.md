@@ -6,7 +6,7 @@ Complete setup for exposing ArgoCD using Ingress with step-ca certificates and a
 
 - Kubernetes cluster with MetalLB configured
 - Helm 3.x installed
-- step-ca running at `ca.saas.local:9000`
+- step-ca running at `ca.saas.internal:9000`
 - etcd running on Docker host listening on port 2379
 - `root_ca.crt` from your step-ca instance
 
@@ -88,10 +88,10 @@ metadata:
 spec:
   acme:
     # The step-ca ACME directory URL
-    server: https://ca.saas.local:9000/acme/acme/directory
+    server: https://ca.saas.internal:9000/acme/acme/directory
     
     # Email for ACME registration (optional but recommended)
-    email: admin@saas.local
+    email: admin@saas.internal
     
     # Secret to store the ACME account private key
     privateKeySecretRef:
@@ -145,7 +145,7 @@ env:
 
 # Domain filter - only manage these domains
 domainFilters:
-  - saas.local
+  - saas.internal
 
 # Source configuration
 sources:
@@ -254,15 +254,15 @@ metadata:
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     
     # external-dns annotation for DNS registration
-    external-dns.alpha.kubernetes.io/hostname: argocd.saas.local
+    external-dns.alpha.kubernetes.io/hostname: argocd.saas.internal
     external-dns.alpha.kubernetes.io/ttl: "300"
 spec:
   tls:
   - hosts:
-    - argocd.saas.local
+    - argocd.saas.internal
     secretName: argocd-server-tls
   rules:
-  - host: argocd.saas.local
+  - host: argocd.saas.internal
     http:
       paths:
       - path: /
@@ -320,13 +320,13 @@ kubectl get svc -n ingress-nginx ingress-nginx-controller
 
 ```bash
 # Test DNS resolution (should resolve to LoadBalancer IP)
-nslookup argocd.saas.local
+nslookup argocd.saas.internal
 
 # Test HTTPS access
-curl -v https://argocd.saas.local
+curl -v https://argocd.saas.internal
 
 # Or access via browser
-# https://argocd.saas.local
+# https://argocd.saas.internal
 ```
 
 ## Troubleshooting
@@ -361,7 +361,7 @@ kubectl get secret step-ca-root-cert-secret -n cert-manager -o yaml
 
 # Test connection to step-ca
 kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- \
-  curl -v --cacert /dev/null -k https://ca.saas.local:9000/health
+  curl -v --cacert /dev/null -k https://ca.saas.internal:9000/health
 ```
 
 ### DNS Issues
@@ -419,14 +419,14 @@ metadata:
     # Use HTTP backend instead
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    external-dns.alpha.kubernetes.io/hostname: argocd.saas.local
+    external-dns.alpha.kubernetes.io/hostname: argocd.saas.internal
 spec:
   tls:
   - hosts:
-    - argocd.saas.local
+    - argocd.saas.internal
     secretName: argocd-server-tls
   rules:
-  - host: argocd.saas.local
+  - host: argocd.saas.internal
     http:
       paths:
       - path: /
@@ -456,4 +456,4 @@ This setup provides:
 - ✅ Secure HTTPS access to ArgoCD via NGINX Ingress
 - ✅ Full integration with your existing step-ca and etcd infrastructure
 
-Your ArgoCD instance should now be accessible at `https://argocd.saas.local` with a valid certificate from your step-ca instance!
+Your ArgoCD instance should now be accessible at `https://argocd.saas.internal` with a valid certificate from your step-ca instance!

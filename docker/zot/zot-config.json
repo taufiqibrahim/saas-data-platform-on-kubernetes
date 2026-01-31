@@ -1,7 +1,10 @@
 {
   "distSpecVersion": "1.1.0",
   "storage": {
-    "rootDirectory": "/var/lib/zot"
+    "rootDirectory": "/var/lib/zot",
+    "gc": true,
+    "gcDelay": "1h",
+    "gcInterval": "24h"
   },
   "http": {
     "address": "0.0.0.0",
@@ -22,6 +25,47 @@
     },
     "ui": {
       "enable": true
+    },
+    "sync": {
+      "enable": true,
+      "credentialsFile": "/etc/zot/credentials.json",
+      "registries": [
+        {
+          "urls": ["https://registry-1.docker.io"],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://quay.io"],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://gcr.io"],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://registry.k8s.io"],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://ghcr.io"],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        }
+      ]
     }
   }
 }

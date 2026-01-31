@@ -32,7 +32,7 @@ Browser / CLI
 * DNS entry:
 
   ```
-  127.0.0.1 bao.saas.local
+  127.0.0.1 bao.saas.internal
   ```
 
 ### 2. OpenBao configuration
@@ -80,7 +80,7 @@ Root token should **never** be used daily.
 ### 5. TLS model
 
 * Step CA is **single root of trust**
-* Caddy issues HTTPS cert for `bao.saas.local`
+* Caddy issues HTTPS cert for `bao.saas.internal`
 * OpenBao trusts Step CA for:
 
   * Client cert auth

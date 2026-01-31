@@ -2,11 +2,11 @@ name: saas
 
 networks:
   saas:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/16
-          gateway: 172.30.0.1
+#     driver: bridge
+#     ipam:
+#       config:
+#         - subnet: 172.30.0.0/16
+#           gateway: 172.30.0.1
 
 volumes:
   caddy_data:
@@ -15,13 +15,58 @@ volumes:
   zot_data:
 
 services:
+
+  step-ca-init:
+    image: smallstep/step-cli:0.23.0
+    container_name: step-ca-init
+    profiles: ["init"]  # <--- This hides it from normal 'up'
+    network_mode: host
+    env_file:
+      - .env
+    # entrypoint: ["/bin/bash", "-c"]
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo "$STEPCA_PASSWORD" > /home/step/secrets/password
+        step ca init --name 'Local SaaS CA' \
+          --provisioner admin \
+          --dns localhost \
+          --dns ca.saas.internal \
+          --address ':9000' \
+          --issuer https://ca.saas.internal:9000 \
+          --password-file /home/step/secrets/password
+        step ca provisioner add acme --type ACME --ca-config /home/step/config/ca.json
+    volumes:
+      - ./docker/step-ca:/home/step
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  step-ca:
+    image: smallstep/step-ca:0.29.0
+    container_name: step-ca
+    network_mode: host
+    volumes:
+      - ./docker/step-ca:/home/step
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   etcd:
     image: quay.io/coreos/etcd:v3.5.0
     container_name: etcd
     network_mode: host
+    env_file:
+      - .env
     environment:
       - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
-      - ETCD_ADVERTISE_CLIENT_URLS=http://192.168.1.4:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://${DOCKER_HOST_IP}:2379
       - ETCD_LOG_LEVEL=debug
     volumes:
       - etcd_data:/var/lib/etcd # Add volume mapping so DNS records will survive on pod restart
@@ -61,6 +106,8 @@ services:
       - --livereload
       - --dev-addr=0.0.0.0:8000
     restart: unless-stopped
+    depends_on:
+      - step-ca
     logging:
       driver: "json-file"
       options:
@@ -74,79 +121,8 @@ services:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./static:/srv/saas:ro
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  step-ca-init:
-    image: smallstep/step-ca:latest
-    container_name: step-ca-init
-    profiles: ["init"]  # <--- This hides it from normal 'up'
-    network_mode: host
-    command: >
-      step ca init --name 'Local SaaS CA'
-      --provisioner admin
-      --dns localhost
-      --dns ca.saas.local
-      --address ':9000'
-      --issuer https://ca.saas.local:9000
-      --acme
-      --password-file /home/step/secrets/password
-    volumes:
-      - ./docker/step-ca:/home/step
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  step-ca:
-    image: smallstep/step-ca:latest
-    container_name: step-ca
-    network_mode: host
-    volumes:
-      - ./docker/step-ca:/home/step
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  openbao:
-    image: quay.io/openbao/openbao:latest
-    container_name: openbao
-    cap_add:
-      - IPC_LOCK
-    user: "100:1000"
-    command: server -config=/bao/config/config.hcl
-    volumes:
-      - ./docker/openbao/config.hcl:/bao/config/config.hcl:ro
-      - ./docker/openbao/data:/mnt/openbao/data
     depends_on:
       - step-ca
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  zot:
-    image: ghcr.io/project-zot/zot:v2.1.14
-    container_name: zot
-    ports:
-      - "5000:5000"
-    depends_on:
-      - step-ca
-    volumes:
-      - ./docker/zot/zot-config.json:/etc/zot/config.json:ro
-      - ./docker/zot/htpasswd:/auth/data/htpasswd:ro
-      - ./docker/zot/credentials.json:/etc/zot/credentials.json:ro
-      - zot_data:/var/lib/zot
-    restart: always
     logging:
       driver: "json-file"
       options:
@@ -172,3 +148,50 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # openbao:
+  #   image: quay.io/openbao/openbao:latest
+  #   container_name: openbao
+  #   cap_add:
+  #     - IPC_LOCK
+  #   user: "100:1000"
+  #   command: server -config=/bao/config/config.hcl
+  #   volumes:
+  #     - ./docker/openbao/config.hcl:/bao/config/config.hcl:ro
+  #     - ./docker/openbao/data:/mnt/openbao/data
+  #   depends_on:
+  #     - step-ca
+  #   restart: always
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+
+  # zot:
+  #   image: ghcr.io/project-zot/zot:v2.1.14
+  #   container_name: zot
+  #   ports:
+  #     - "5000:5000"
+  #   depends_on:
+  #     - step-ca
+  #   volumes:
+  #     - ./docker/zot/zot-config.json:/etc/zot/config.json:ro
+  #     - ./docker/zot/htpasswd:/auth/data/htpasswd:ro
+  #     - ./docker/zot/credentials.json:/etc/zot/credentials.json:ro
+  #     - zot_data:/var/lib/zot
+  #   restart: always
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+
+  cloud-provider:
+    image: cloud-provider-kind
+    container_name: cloud-provider
+    # network_mode: "${NET_MODE-host}"
+    network_mode: kind
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
