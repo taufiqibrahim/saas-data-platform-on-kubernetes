@@ -1,0 +1,189 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+volumes:
+  pgdata:
+  keycloak_pgdata:
+
+networks:
+  controlplane:
+    driver: bridge
+    name: controlplane
+
+services:
+  # -----------------------------------------------------------------
+  #  CONTROL PLANE
+  # -----------------------------------------------------------------
+  cp-db:
+    image: postgres:16
+    container_name: cp-db
+    environment:
+      POSTGRES_DB: saas
+      POSTGRES_USER: saas
+      POSTGRES_PASSWORD: saas
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane
+
+  # -----------------------------------------------------------------
+  #  KEYCLOAK
+  # -----------------------------------------------------------------
+  keycloak-db:
+    image: postgres:16
+    container_name: cp-keycloak-pg
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak_pgdata:/var/lib/postgresql/data
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5
+    container_name: cp-keycloak
+    command: start
+    environment:
+      # KC_HOSTNAME: "cp-sso.localhost"
+      KC_HOSTNAME: "localhost"
+      # ---- STRICTNESS (dev-friendly)
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+      # Proxy mode
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: "xforwarded"
+      KC_PROXY: "edge"
+      # Admin bootstrap
+      KC_BOOTSTRAP_ADMIN_USERNAME: kcadmin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: kcadmin
+      # ---- Database
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak?schema=public
+      KC_DB_HOST: keycloak-db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      # Clustering: Fixes the JGroups "Connection Refused" errors
+      KC_CACHE: "local"
+    ports:
+      - "5980:8080"
+      - "5943:8443"
+      - "5900:9000"
+    logging: *default-logging
+    networks:
+      - controlplane
+    restart: always
+
+  # -----------------------------------------------------------------
+  #  REDIS
+  # -----------------------------------------------------------------
+  redis:
+    image: redis:7
+    container_name: cp-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    env_file:
+      - .env.docker
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane
+
+  # -----------------------------------------------------------------
+  #  CERBOS
+  # -----------------------------------------------------------------
+  cerbos:
+    image: cerbos/cerbos:0.50.0
+    container_name: cp-cerbos
+    command: ["server", "--config=/config/.cerbos.yaml"]
+    ports:
+      - "5092:3592"
+      - "5093:3593" # optional, gRPC
+    volumes:
+      - ./cerbos:/config:ro
+    env_file:
+      - .env.docker
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane
+
+  # -----------------------------------------------------------------
+  #  TEMPORAL
+  # -----------------------------------------------------------------
+  temporal-db:
+    container_name: cp-temporal-pg
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    image: postgres:16
+    volumes:
+      - /var/lib/postgresql/data
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane
+
+  temporal:
+    container_name: cp-temporal
+    depends_on:
+      - temporal-db
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-db
+      # - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    image: temporalio/auto-setup:1.28.0
+    ports:
+      - 7233:7233
+    # volumes:
+      # - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      # - ./develop/temporal/init-namespaces.sh:/etc/init-namespaces.sh
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane
+
+  temporal-admin-tools:
+    container_name: cp-temporal-admin-tools
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION:-1.28}
+    stdin_open: true
+    tty: true
+    logging: *default-logging
+    networks:
+      - controlplane
+    restart: always
+
+  temporal-ui:
+    container_name: cp-temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    image: temporalio/ui
+    ports:
+      - 9080:8080
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane

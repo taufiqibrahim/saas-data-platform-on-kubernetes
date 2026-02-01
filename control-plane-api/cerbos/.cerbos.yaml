@@ -1,0 +1,14 @@
+server:
+  httpListenAddr: ":3592"
+  adminAPI:
+    enabled: true
+
+storage:
+  driver: "disk"
+  disk:
+    directory: /config/policies
+    watchForChanges: true
+
+  # driver: "postgres"
+  # postgres:
+  #   url: "postgres://${CERBOS_PG_USER}:${CERBOS_PG_PASSWORD}@${CERBOS_PG_HOST}:${CERBOS_PG_PORT}/${CERBOS_PG_DBNAME}?sslmode=disable&search_path=${CERBOS_PG_SEARCH_PATH}"

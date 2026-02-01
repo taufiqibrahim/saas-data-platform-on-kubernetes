@@ -5,8 +5,7 @@ Included also workflow management using [Temporal](https://temporal.io).
 
 ## Quickstart
 
-Prerequisites:
-
+### Prepare Prerequisites
 ```bash
 # Install node js
 sudo apt install nodejs
@@ -25,6 +24,12 @@ nvm use --lts
 
 Create a `.env` file based on `.env.example`.
 
+### Run Supporting Services
+```bash
+docker compose up -d
+```
+
+### Development
 Next, run this:
 
 ```bash

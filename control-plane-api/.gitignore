@@ -144,3 +144,5 @@ build
 
 # TSOA generated:
 src/generated
+
+.env.docker
