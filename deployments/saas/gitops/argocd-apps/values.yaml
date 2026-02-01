@@ -1,0 +1,9 @@
+global:
+  environment: internal
+infra:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: git@github.com:taufiqibrahim/saas-data-platform-on-kubernetes.git
+    targetRevision: main

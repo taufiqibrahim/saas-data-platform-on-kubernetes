@@ -1,0 +1,74 @@
+saas.internal {
+	reverse_proxy http://static:80
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.internal:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
+zot.saas.internal {
+	reverse_proxy http://zot:5000
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.internal:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
+bao.saas.internal {
+	reverse_proxy http://openbao:8200
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.internal:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
+ca.saas.internal {
+	tls internal
+	reverse_proxy 127.0.0.1:9000
+}
+
+docs.saas.internal {
+	reverse_proxy http://mkdocs:8000
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.internal:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
+api.saas.internal {
+	respond "HTTPS OK api.saas.internal"
+	tls internal
+}
+
+ui.saas.internal {
+	respond "HTTPS OK ui.saas.internal"
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.internal:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}

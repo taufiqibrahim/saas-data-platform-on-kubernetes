@@ -1,0 +1,16 @@
+# Local generated CA
+ca/
+
+# Local generated certs
+certs/
+
+# Local docker data
+_data/
+docker/step-ca
+docker/openbao/data
+docker/zot/htpasswd
+docker/zot/credentials*
+!docker/zot/credentials.example.json
+
+# environment
+.env

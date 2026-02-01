@@ -1,0 +1,57 @@
+site_name: SaaS Data Platform on Kubernetes
+
+nav:
+  - Home: index.md
+
+  - Getting Started:
+      - getting-started/index.md
+      - Concepts:
+          - getting-started/00-concepts/01-architecture.md
+          - getting-started/00-concepts/02-local-dns-and-tls.md
+      - Making Domains Work:
+          - getting-started/01-making-domains-work/index.md
+          - getting-started/01-making-domains-work/00-before-you-begin.md
+          - getting-started/01-making-domains-work/01-env-preparation.md
+          - getting-started/01-making-domains-work/02-ca-bootstraping.md
+          - getting-started/01-making-domains-work/03-dns-setup.md
+          - getting-started/01-making-domains-work/04-secret-provider.md
+          - getting-started/01-making-domains-work/05-registry.md
+          - getting-started/01-making-domains-work/06-run-the-services.md
+      - Running the SaaS:
+          - getting-started/02-running-the-saas/index.md
+          - getting-started/02-running-the-saas/01-saas-cluster.md
+          - getting-started/02-running-the-saas/02-configure-gitops.md
+          - getting-started/02-running-the-saas/03-configure-registry.md
+      - Making Domains Work:
+          - getting-started/01-making-domains-work/index.md
+          - getting-started/01-making-domains-work/01-local-concept.md
+          - getting-started/01-making-domains-work/02-bootstraping-ca.md
+          - getting-started/01-making-domains-work/03-setup-dns.md
+
+
+theme:
+  name: material
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.sections
+    - navigation.instant
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+    - content.tabs.link
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true

@@ -1,0 +1,32 @@
+saas.internal {
+    bind 127.0.0.1
+    log
+    errors
+
+    hosts {
+        {$DOCKER_HOST_IP} saas.internal
+        {$DOCKER_HOST_IP} bao.saas.internal
+        {$DOCKER_HOST_IP} ca.saas.internal
+        {$DOCKER_HOST_IP} docs.saas.internal
+        {$DOCKER_HOST_IP} ui.saas.internal
+        {$DOCKER_HOST_IP} zot.saas.internal
+        fallthrough
+    }
+
+    # We use the /skydns path to stay compatible with external-dns
+    etcd {
+        path /skydns
+        endpoint http://{$DOCKER_HOST_IP}:2379
+    }
+    # This allows CoreDNS to respond to the cluster even if 
+    # a specific record isn't in etcd yet
+    # fallthrough
+}
+
+. {
+    bind 127.0.0.1
+    log
+    errors
+    forward . 1.1.1.1:53
+    cache 30
+}
