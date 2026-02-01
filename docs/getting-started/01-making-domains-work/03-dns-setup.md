@@ -39,7 +39,42 @@ ExternalDNS provide the tutorial usage on [https://kubernetes-sigs.github.io/ext
 
 Example usage with ArgoCD ingress. It is used in later the SaaS cluster.
 ```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server-ingress
+  namespace: argocd
+  annotations:    
+    # cert-manager annotation to request certificate from step-ca
+    cert-manager.io/cluster-issuer: step-ca-acme
+    
+    # NGINX specific annotations for ArgoCD
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # external-dns annotations for automatic DNS registration
+    external-dns.alpha.kubernetes.io/hostname: argocd.saas.internal
+    external-dns.alpha.kubernetes.io/coredns-group: "g-saas"
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - argocd.saas.internal
 
+    # This secret will be created by cert-manager
+    secretName: argocd-server-tls
+  rules:
+  - host: argocd.saas.internal
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              number: 80
 ```
 
 ## Important Notes

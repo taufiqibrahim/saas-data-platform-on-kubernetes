@@ -11,6 +11,7 @@ The system is designed to support a SaaS-style hostname structure such as:
 
 | Domain | Usage |
 | --- | --- |
+| [https://saas.internal](https://saas.internal) | Static content using NGINX for demonstration purpose |
 | [https://docs.saas.internal](https://docs.saas.internal) | This documentation runs locally |
 | [https://api.saas.internal](https://api.saas.internal) | - |
 | [https://ui.saas.internal](https://ui.saas.internal) | - |
@@ -26,35 +27,25 @@ The architecture is built from the following roles:
 - **CoreDNS**  
   Owns the local `saas.internal` DNS zone and serves authoritative DNS records.
 
+- **etcd**  
+  Store the DNS records to be served by CoreDNS.
+
 - **Step CA**  
   Perform certificate management and root certificate creation.
 
-- **external-dns (RFC2136)**  
-  Observes Kubernetes resources and automatically creates DNS records in PowerDNS.
+- **cloud-provider-kind**  
+  Simulates the behavior of a cloud provider by provisioning load balancer when a LoadBalancer service is requested.
+
+- **external-dns**  
+  Observes Kubernetes resources and automatically creates DNS records in [CoreDNS with etcd backend](https://kubernetes-sigs.github.io/external-dns/v0.20.0/docs/tutorials/coredns-etcd/).
 
 - **cert-manager**  
   Issues and renews TLS certificates from a private Certificate Authority (CA).
 
-- **MetalLB**  
-  Provides stable, externally reachable IPs for Kubernetes `LoadBalancer` services in local environments.
-
 - **Ingress Controller (nginx or caddy)**  
   Terminates HTTPS and routes traffic to services inside the cluster.
 
-This stack works consistently across **Windows, macOS, and Linux**, and with **kind, k3s, or k3d**.
-
-## 4. HTTPS Guarantee
-
-The architecture ensures:
-
-- TLS is handled **inside Kubernetes**
-- Certificates are **automatically issued and renewed**
-- A **single private CA** is trusted everywhere
-- No browser security warnings
-- No `/etc/hosts` hacks
-
-
-## 5. Goals
+## 4. Goals
 
 * Production-like DNS & TLS flow
 * No `/etc/hosts`
@@ -62,18 +53,16 @@ The architecture ensures:
 * Wildcard domains for SaaS + tenants
 * Clean separation of concerns (DNS, TLS, Ingress)
 
----
-
-## 6. Architecture Overview
+## 5. Architecture Overview
 
 ```
 Browser
   ↓
 DNS Query (api.saas.internal)
   ↓
-PowerDNS (Authoritative)
+CoreDNS (Authoritative)
   ↓
-MetalLB IP (LoadBalancer)
+cloud-provider-kind (LoadBalancer)
   ↓
 Ingress Controller
   ↓
@@ -87,7 +76,7 @@ Control plane:
 * `external-dns` → CoreDNS + etcd (creates A / TXT records)
 * `cert-manager` → Private CA using Step CA (issues certs)
 
-## 7. DNS Design
+## 6. DNS Design
 
 ### Zone
 
@@ -95,15 +84,14 @@ Control plane:
 saas.internal
 ```
 
-Managed **only** by PowerDNS (authoritative).
+Managed **only** by CoreDNS (authoritative).
 
 ### Records
 
 * Created automatically by `external-dns`
 * Based on `Service` / `Ingress` objects
-* No manual `pdnsutil` once automated
 
-## 8. TLS / Certificate Design
+## 7. TLS / Certificate Design
 
 ### One CA per environment
 
@@ -117,7 +105,7 @@ Managed **only** by PowerDNS (authoritative).
 
 > The CA is created **once**, reused everywhere.
 
-## 9. Certificate Strategy (Prod-like)
+## 8. Certificate Strategy (Prod-like)
 
 **ONE CA**, but **multiple certificates**.
 
@@ -156,7 +144,7 @@ TLS wildcards only match **one DNS label**.
 
 This mirrors real SaaS production setups.
 
-## 11. Kubernetes Components
+## 9. Kubernetes Components
 
 ### Required
 
@@ -168,38 +156,29 @@ This mirrors real SaaS production setups.
 ### external-dns responsibilities
 
 * Watches Services / Ingresses
-* Creates DNS records in PowerDNS
+* Creates DNS records in CoreDNS with etcd backend
 * No DNS resolution involved
 
 ### cert-manager responsibilities
 
-* Issues certs from the private CA
+* Issues certs from the private CA (Step CA)
 * Stores certs as Kubernetes Secrets
 * Renews automatically
 
-## 12. Workflow Summary
+## 10. Workflow Summary
 
 1. Private CA is created (once)
 2. CA is trusted by OS & browser
-3. CA is imported into cert-manager
-4. MetalLB assigns IP to Ingress Service
-5. external-dns creates DNS records
-6. cert-manager issues wildcard certs
+3. CA is imported into **cert-manager** using **Cluster Issuer**
+4. **cloud-provider-kind** assigns IP to Ingress Service
+5. **external-dns** creates DNS records
+6. **cert-manager** issues certs
 7. Ingress serves HTTPS traffic
 
-## 13. Mental Model
 
-```
-ONE environment
-→ ONE CA (trust root)
-→ MANY certificates
-→ MANY tenants
-→ MANY apps
-```
+## 11. Result
 
-## 14. Result
-
-You now have:
+You will have:
 
 * Production-like DNS
 * Production-like TLS
@@ -208,4 +187,4 @@ You now have:
 * Zero browser warnings
 
 ## Next Steps
-- [Bootstraping CA](./b-bootstraping-ca.md)
+- [Bootstraping CA](./02-ca-bootstraping.md)

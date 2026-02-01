@@ -28,8 +28,7 @@ Feel free to experiment with our own configuration by refering to [https://kind.
 
 Now let's deploy the cluster:
 ```bash
-cd deployments/saas/
-kind create cluster --config=kind-saas-cluster.yaml
+kind create cluster --config=./deployments/saas/kind-saas-cluster.yaml
 ```
 
 ## Interacting With The Cluster

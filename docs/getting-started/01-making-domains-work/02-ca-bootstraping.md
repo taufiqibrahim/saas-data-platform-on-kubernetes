@@ -8,7 +8,6 @@ Step CA is a private CA for automated management of **X.509 TLS certificates** a
 
 By the end of this section:
 
-- Step CA is running locally  
 - A single **root CA** is created  
 - The root CA is trusted by your OS and browser  
 - Any certificate issued by Step CA is automatically trusted
@@ -41,38 +40,15 @@ By the end of this section:
 - Docker + Docker Compose
 
 ## Step 1 — Create Step CA Data Directory and Password
-
 ```bash
-# Create directory structure with correct permissions in one command
-mkdir -p docker/step-ca/secrets && sudo chown -R 1000:1000 docker/step-ca
-
-# Create password file securely
-read -rsp "Enter step-ca password: " STEPCA_PASSWORD \
- && echo "$STEPCA_PASSWORD" > docker/step-ca/secrets/password \
- && unset STEPCA_PASSWORD && echo
-
-```
-
-Create a working directory:
-```bash
+# Create directory structure with correct permissions
 # ! docker/step-ca directory is ignored by .gitignore
-mkdir -p docker/step-ca/secrets && sudo chown -R 1000:1000 docker/step-ca
-```
-
-Create step-ca password file. Change the password as you need.
-```bash
-# Create the password file
-read -rs STEPCA_PASSWORD
-
-# Then write
-echo "$STEPCA_PASSWORD" > docker/step-ca/secrets/password
-
-# Update directory ownership
-sudo chown -R 1000:1000 docker/step-ca
+mkdir -p docker/step-ca/secrets docker/step-ca/certs && \
+  sudo chown -R 1000:1000 docker/step-ca
 ```
 
 ## Step 2 — Initialize the Certificate Authority
-We run Step CA as a **Docker container**, so it is:
+We run Step CA CLI as a **Docker container**, so it is:
 
 * Easy to reset
 * Isolated
@@ -82,24 +58,12 @@ We will initialize Step CA using Docker container which writes to `docker/step-c
 
 Run:
 ```bash
-docker compose run --rm step-ca-bootstrap
-docker compose run --rm step-ca-cli step ca init
 docker compose run --rm step-ca-init
 ```
 
-You will be prompted and can fill like follows:
+That command above should output something like following example output:
 ```
-✔ Deployment Type: Standalone
-What would you like to name your new PKI?
-✔ (e.g. Smallstep): Saas Local
-What DNS names or IP addresses will clients use to reach your CA?
-✔ (e.g. ca.example.com[,10.1.2.3,etc.]): ca.saas.internal
-What IP and port will your new CA bind to? (:443 will bind to 0.0.0.0:443)
-✔ (e.g. :443 or 127.0.0.1:443): :9000
-What would you like to name the CA's first provisioner?
-✔ (e.g. you@smallstep.com): admin@saas.internal█
-Choose a password for your CA keys and first provisioner.
-✔ [leave empty and we'll generate one]: <just ENTER to let it generate>
+...TODO
 ```
 
 All data generated is stored in `docker/step-ca` directory.
@@ -176,4 +140,4 @@ At this point:
 * ✅ Ready to issue unlimited certificates
 
 ## Next
-- [Setting Up Local DNS](./c-setup-dns.md)
+- [DNS Setup](./c-setup-dns.md)
