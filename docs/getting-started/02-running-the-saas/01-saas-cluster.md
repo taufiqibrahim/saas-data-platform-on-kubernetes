@@ -26,7 +26,7 @@ That example configuration:
 
 Feel free to experiment with our own configuration by refering to [https://kind.sigs.k8s.io/docs/user/configuration/](https://kind.sigs.k8s.io/docs/user/configuration/).
 
-Now let's deploy the cluster:
+Now let's create the cluster:
 ```bash
 kind create cluster --config=./deployments/saas/kind-saas-cluster.yaml
 ```
@@ -44,29 +44,37 @@ saas-cluster
 
 In order to interact with a specific cluster, we need to specify the cluster name as a context in `kubectl` as the current context:
 ```bash
-kubectl config use-context kind-tenant-cluster
-```
-
-## Preparing Secrets
-
-Setup `ghcr.io` pull secret
-```bash
-kubectl create secret docker-registry dockerio-pull-secret \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_PAT \
-  --docker-email=any@email.com \
-  -n default
-```
-
-Setup `docker.io` pull secret
-```bash
-kubectl create secret docker-registry ghcr-secret \
-  --docker-server=docker.io \
-  --docker-username=YOUR_DOCKER_USERNAME \
-  --docker-password=YOUR_DOCKER_PAT \
-  --docker-email=any@email.com \
-  -n default
+kubectl config use-context kind-saas-cluster
 ```
 
 Now we're ready to use the cluster.
+
+## Bootstrap The Cluster
+
+```bash
+DOCKER_HOST_IP=<docker-host-ip> ROOT_CA_PATH=./docker/step-ca/certs/root_ca.crt ./deployments/saas/bootstrap-saas-cluster.sh
+```
+
+## Troubleshootings
+
+### Error ErrImagePull, ImagePullBackOff
+
+Check the error message in Kubernetes pod status:
+```bash
+...
+status:
+  conditions:
+    ...
+    started: false
+    state:
+      waiting:
+        message: 'Back-off pulling image "nicolaka/netshoot:latest": ErrImagePull:
+          failed to pull and unpack image "docker.io/nicolaka/netshoot:latest": failed
+          to copy: read tcp 172.18.0.3:33362->104.16.101.215:443: read: connection
+          reset by peer'
+        reason: ImagePullBackOff
+```
+
+Solution:
+
+Pre-pull the image on the host and load it into KIND: docker pull nicolaka/netshoot:latest && kind load docker-image nicolaka/netshoot:latest --name <cluster-name>
