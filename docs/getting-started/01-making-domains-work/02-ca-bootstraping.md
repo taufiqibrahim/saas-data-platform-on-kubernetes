@@ -40,9 +40,11 @@ By the end of this section:
 - Docker + Docker Compose
 
 ## Step 1 — Create Step CA Data Directory and Password
+
+> `docker/step-ca` is git-ignored.
+
 ```bash
 # Create directory structure with correct permissions
-# ! docker/step-ca directory is ignored by .gitignore
 mkdir -p docker/step-ca/secrets docker/step-ca/certs && \
   sudo chown -R 1000:1000 docker/step-ca
 ```

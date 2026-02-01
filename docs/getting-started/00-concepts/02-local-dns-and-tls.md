@@ -1,4 +1,4 @@
-# Concept
+# Local DNS and TLS Concepts
 
 ## 1. Overview
 This document describes the **conceptual architecture** for running **local DNS and HTTPS** in a **100% local Kubernetes environment** that closely **mimics real production systems**.
@@ -18,31 +18,31 @@ The system is designed to support a SaaS-style hostname structure such as:
 | [https://tenant1.saas.internal](https://tenant1.saas.internal) | - |
 | [https://app1.tenant1.saas.internal](https://app1.tenant1.saas.internal) | - |
 
-All domains are resolved via local authoritative DNS and served over HTTPS using certificates trusted by the developer’s OS and browser.
+All domains are resolved via local authoritative DNS and served over HTTPS using certificates trusted by the developer's OS and browser.
 
 ## 3. Core Components
 
 The architecture is built from the following roles:
 
-- **CoreDNS**  
+- **CoreDNS**
   Owns the local `saas.internal` DNS zone and serves authoritative DNS records.
 
-- **etcd**  
+- **etcd**
   Store the DNS records to be served by CoreDNS.
 
-- **Step CA**  
+- **Step CA**
   Perform certificate management and root certificate creation.
 
-- **cloud-provider-kind**  
+- **cloud-provider-kind**
   Simulates the behavior of a cloud provider by provisioning load balancer when a LoadBalancer service is requested.
 
-- **external-dns**  
+- **external-dns**
   Observes Kubernetes resources and automatically creates DNS records in [CoreDNS with etcd backend](https://kubernetes-sigs.github.io/external-dns/v0.20.0/docs/tutorials/coredns-etcd/).
 
-- **cert-manager**  
+- **cert-manager**
   Issues and renews TLS certificates from a private Certificate Authority (CA).
 
-- **Ingress Controller (nginx or caddy)**  
+- **Ingress Controller (nginx or caddy)**
   Terminates HTTPS and routes traffic to services inside the cluster.
 
 ## 4. Goals
@@ -175,7 +175,6 @@ This mirrors real SaaS production setups.
 6. **cert-manager** issues certs
 7. Ingress serves HTTPS traffic
 
-
 ## 11. Result
 
 You will have:
@@ -187,4 +186,4 @@ You will have:
 * Zero browser warnings
 
 ## Next Steps
-- [Bootstraping CA](./02-ca-bootstraping.md)
+- [Before You Begin — DNS Resolver](../01-making-domains-work/00-before-you-begin.md)
