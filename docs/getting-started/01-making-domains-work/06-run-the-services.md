@@ -4,11 +4,7 @@
 
 Create required directories:
 ```bash
-# ! docker/step-ca directory is ignored by .gitignore
-mkdir -p docker/openbao/data
-
-# Update directory ownership
-sudo chown -R 100:1000 docker/openbao/data
+mkdir -p docker/openbao/data && sudo chown -R 100:1000 docker/openbao/data
 ```
 
 Start the services using `docker compose up`.
@@ -16,6 +12,32 @@ Start the services using `docker compose up`.
 docker compose up -d
 ```
 
+Switch to local DNS by editing `/etc/systemd/resolved.conf`:
+```bash
+sudo nano /etc/systemd/resolved.conf
+```
+
+Update the content:
+```ini
+[Resolve]
+DNS=127.0.0.1
+FallbackDNS=9.9.9.9 1.1.1.1 8.8.8.8
+DNSStubListener=yes
+```
+
+Restart `systemd-resolved` service.
+```bash
+sudo systemctl restart systemd-resolved
+```
+
+Verify that we can access these URLs:
+
+- [https://saas.internal](https://saas.internal)
+- [https://docs.saas.internal](https://docs.saas.internal)
+
+---
+
+## Running Services Explained
 The running services explained as follows:
 
 ## CoreDNS
@@ -25,7 +47,7 @@ The running services explained as follows:
 
 ## Step CA
 - Runing on `network_mode: host` on host's port 9000.
-- Accessible on https://localhost:9000 and https://ca.saas.internal:9000
+- Accessible on [https://ca.saas.internal:9000](https://ca.saas.internal:9000)
 
 ## Zot
 ### Login to zot via web UI

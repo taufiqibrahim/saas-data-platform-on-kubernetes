@@ -2,6 +2,7 @@ name: saas
 
 networks:
   saas:
+    name: saas-net
 #     driver: bridge
 #     ipam:
 #       config:
@@ -149,43 +150,43 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # openbao:
-  #   image: quay.io/openbao/openbao:latest
-  #   container_name: openbao
-  #   cap_add:
-  #     - IPC_LOCK
-  #   user: "100:1000"
-  #   command: server -config=/bao/config/config.hcl
-  #   volumes:
-  #     - ./docker/openbao/config.hcl:/bao/config/config.hcl:ro
-  #     - ./docker/openbao/data:/mnt/openbao/data
-  #   depends_on:
-  #     - step-ca
-  #   restart: always
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
+  openbao:
+    image: quay.io/openbao/openbao:latest
+    container_name: openbao
+    cap_add:
+      - IPC_LOCK
+    user: "100:1000"
+    command: server -config=/bao/config/config.hcl
+    volumes:
+      - ./docker/openbao/config.hcl:/bao/config/config.hcl:ro
+      - ./docker/openbao/data:/mnt/openbao/data
+    depends_on:
+      - step-ca
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # zot:
-  #   image: ghcr.io/project-zot/zot:v2.1.14
-  #   container_name: zot
-  #   ports:
-  #     - "5000:5000"
-  #   depends_on:
-  #     - step-ca
-  #   volumes:
-  #     - ./docker/zot/zot-config.json:/etc/zot/config.json:ro
-  #     - ./docker/zot/htpasswd:/auth/data/htpasswd:ro
-  #     - ./docker/zot/credentials.json:/etc/zot/credentials.json:ro
-  #     - zot_data:/var/lib/zot
-  #   restart: always
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
+  zot:
+    image: ghcr.io/project-zot/zot:v2.1.14
+    container_name: zot
+    ports:
+      - "5000:5000"
+    depends_on:
+      - step-ca
+    volumes:
+      - ./docker/zot/zot-config.json:/etc/zot/config.json:ro
+      - ./docker/zot/htpasswd:/auth/data/htpasswd:ro
+      - ./docker/zot/credentials.json:/etc/zot/credentials.json:ro
+      - zot_data:/var/lib/zot
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   cloud-provider:
     image: cloud-provider-kind

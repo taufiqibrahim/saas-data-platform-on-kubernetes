@@ -40,7 +40,7 @@ docker pull caddy:2.10.2
 
 ## 3. Build `cloud-provider-kind`
 
-This image is not published to a registry — it must be built locally:
+This image is not yet published to a registry (at the time of writing) — it must be built locally:
 
 ```bash
 git clone https://github.com/kubernetes-sigs/cloud-provider-kind

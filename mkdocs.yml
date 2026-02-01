@@ -5,9 +5,13 @@ nav:
 
   - Getting Started:
       - getting-started/index.md
+      - Concepts:
+          - getting-started/00-concepts/01-architecture.md
+          - getting-started/00-concepts/02-local-dns-and-tls.md
       - Making Domains Work:
           - getting-started/01-making-domains-work/index.md
-          - getting-started/01-making-domains-work/01-local-concept.md
+          - getting-started/01-making-domains-work/00-before-you-begin.md
+          - getting-started/01-making-domains-work/01-env-preparation.md
           - getting-started/01-making-domains-work/02-ca-bootstraping.md
           - getting-started/01-making-domains-work/03-dns-setup.md
           - getting-started/01-making-domains-work/04-secret-provider.md

@@ -64,8 +64,26 @@ docker compose run --rm step-ca-init
 ```
 
 That command above should output something like following example output:
-```
-...TODO
+```bash
+✔ Root certificate: /home/step/certs/root_ca.crt
+✔ Root private key: /home/step/secrets/root_ca_key
+✔ Root fingerprint: xxxxxxxx
+✔ Intermediate certificate: /home/step/certs/intermediate_ca.crt
+✔ Intermediate private key: /home/step/secrets/intermediate_ca_key
+✔ Database folder: /home/step/db
+✔ Default configuration: /home/step/config/defaults.json
+✔ Certificate Authority configuration: /home/step/config/ca.json
+
+Your PKI is ready to go. To generate certificates for individual services see 'step help ca'.
+
+FEEDBACK 😍 🍻
+  The step utility is not instrumented for usage statistics. It does not phone
+  home. But your feedback is extremely valuable. Any information you can provide
+  regarding how you’re using `step` helps. Please send us a sentence or two,
+  good or bad at feedback@smallstep.com or join GitHub Discussions
+  https://github.com/smallstep/certificates/discussions and our Discord 
+  https://u.step.sm/discord.
+✔ CA Configuration: /home/step/config/ca.json
 ```
 
 All data generated is stored in `docker/step-ca` directory.
