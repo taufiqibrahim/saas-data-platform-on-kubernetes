@@ -1,0 +1,94 @@
+import { Prisma } from '@prisma/client';
+
+import { createdByPrincipalSelect } from '../principal/principal.select';
+
+export const workspaceSelect = Prisma.validator<Prisma.WorkspaceSelect>()({
+  id: false,
+  uid: true,
+  extWorkspaceId: true,
+  name: true,
+  status: true,
+  description: true,
+  // credential: {
+  //   select: {
+  //     uid: true,
+  //     credentialName: true,
+  //     cloudProvider: true,
+  //     createdAt: true,
+  //     createdBy: { select: createdByPrincipalSelect },
+  //   },
+  // },
+  // storage: {
+  //   select: {
+  //     uid: true,
+  //     storageName: true,
+  //     cloudProvider: true,
+  //     cloudRegion: true,
+  //     type: true,
+  //     storageConfig: true,
+  //     createdAt: true,
+  //     createdBy: { select: createdByPrincipalSelect },
+  //   },
+  // },
+  // network: {
+  //   select: {
+  //     uid: true,
+  //     networkName: true,
+  //     cloudProvider: true,
+  //     cloudRegion: true,
+  //     networkConfig: true,
+  //     createdAt: true,
+  //     createdBy: { select: createdByPrincipalSelect },
+  //   },
+  // },
+  createdAt: true,
+  createdBy: {
+    select: createdByPrincipalSelect,
+  },
+  updatedAt: true,
+});
+
+export const workspaceProvisionConfigSelect = Prisma.validator<Prisma.WorkspaceSelect>()({
+  id: false,
+  uid: true,
+  extWorkspaceId: true,
+  name: true,
+  status: true,
+  // cloudRegion: {
+  //   include: {
+  //     cloudProvider: true,
+  //   },
+  // },
+  // credential: {
+  //   select: {
+  //     uid: true,
+  //     credentialName: true,
+  //     credentialConfig: true,
+  //     cloudProvider: true,
+  //   },
+  // },
+  // storage: {
+  //   select: {
+  //     uid: true,
+  //     storageName: true,
+  //     cloudProvider: true,
+  //     cloudRegion: true,
+  //     type: true,
+  //     storageConfig: true,
+  //   },
+  // },
+  // network: {
+  //   select: {
+  //     uid: true,
+  //     networkName: true,
+  //     cloudProvider: true,
+  //     cloudRegion: true,
+  //     networkConfig: true,
+  //   },
+  // },
+  account: {
+    select: {
+      extAccountId: true,
+    },
+  },
+});

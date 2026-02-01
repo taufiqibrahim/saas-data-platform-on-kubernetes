@@ -1,0 +1,6 @@
+node_modules
+dist
+!dist/openapi/swagger.yaml
+*.log
+.env
+Dockerfile
