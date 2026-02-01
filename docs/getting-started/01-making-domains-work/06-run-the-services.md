@@ -49,6 +49,28 @@ The running services explained as follows:
 - Runing on `network_mode: host` on host's port 9000.
 - Accessible on [https://ca.saas.internal:9000](https://ca.saas.internal:9000)
 
+## OpenBao
+- Running as Docker container service
+- Accessible on [https://bao.saas.internal](https://bao.saas.internal)
+
+### Configure OpenBao
+
+1. Go to OpenBao URL. We will see the initial unseal UI. Choose **Create a new Raft cluster**.
+2. Set **Key shared=5** and **Key threshold=3**.
+3. **Download keys** and save it securely.
+4. Click on **Continue to Unseal**.
+
+### Login to OpenBao
+
+OpenBao will require you to input 3 keys + root token to unseal.
+
+### Configure New Secret Engine
+1. On **Secret Engines** -> **Enable new engine** -> **KV**
+2. On **Enable a Secrets Engine** screen:
+    - Path = `kv`
+3. Click **Enable Engine**
+4. We are ready to **Create secret**
+
 ## Zot
 ### Login to zot via web UI
 - Go to [https://zot.saas.internal](https://zot.saas.internal)

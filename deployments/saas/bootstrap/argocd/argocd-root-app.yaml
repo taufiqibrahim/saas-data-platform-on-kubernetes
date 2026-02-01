@@ -12,9 +12,9 @@ spec:
 
   # Source of the application manifests
   source:
-    repoURL: https://github.com/your-org/your-repo.git  # CHANGE THIS to your repo
-    targetRevision: main  # or master, or specific branch
-    path: deployment/gitops/argocd-apps  # Path to ArgoCD Application definitions
+    repoURL: https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes.git
+    targetRevision: main
+    path: deployments/saas/gitops/argocd-apps
 
   # Destination cluster and namespace
   destination:
