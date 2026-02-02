@@ -4,9 +4,10 @@
   "main": "src/index.ts",
   "scripts": {
     "dev:init": "npx ts-node tsoa-gen.ts",
-    "dev": "tsx watch --enable-source-maps src/index.ts --watch ./src --ignore ./src/generated/** --ignore ./src/openapi/** < /dev/null",
+    "dev:api": "tsx watch --enable-source-maps src/index.ts --watch ./src --ignore ./src/generated/** --ignore ./src/openapi/** < /dev/null",
     "dev:worker:shared": "tsx watch src/temporal/workers/shared.worker.ts < /dev/null",
     "dev:workers": "concurrently -k -n shared -c blue \"npm:dev:worker:shared\"",
+    "dev": "concurrently -k -n api,workers -c green,blue \"npm:dev:api\" \"npm:dev:workers\"",
     "lint": "eslint ./src --fix",
     "format": "prettier --write .",
     "build": "tsc -p tsconfig.build.json && tsc-alias",

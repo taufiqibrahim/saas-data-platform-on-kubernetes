@@ -222,9 +222,11 @@ const temporalConfig: TemporalConfig = {
 //   },
 // };
 
+const listenPort = Number(process.env.LISTEN_PORT) || 5001;
+
 const appConfig: AppConfig = {
-  baseUrl: process.env.BASE_URL || 'https://localhost:5001',
-  listenPort: Number(process.env.LISTEN_PORT) || 5001,
+  baseUrl: process.env.BASE_URL || `https://localhost:${listenPort}`,
+  listenPort: listenPort,
   logLevel: process.env.LOG_LEVEL || 'info',
   jsonLimit: process.env.JSON_LIMIT || '10mb',
   nodeEnv: process.env.NODE_ENV || 'development',

@@ -3,7 +3,7 @@ import { CopyCell } from "@/components/custom/copy-cell";
 import { BootstrapClusterButton } from "@/components/custom/workspace/bootstrap-cluster-button";
 
 export const WorkspaceShow = () => (
-  <Show>
+  <Show title="Workspace">
     <div className="flex flex-col gap-4">
       <RecordField
         source="extWorkspaceId"

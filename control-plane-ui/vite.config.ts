@@ -17,11 +17,11 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",   // IMPORTANT (Docker / VM / k8s safe)
-    port: 5001,
+    port: 5000,
     hmr: {
       protocol: "ws",
       host: "localhost", // change if accessing via IP / domain
-      port: 5001,
+      port: 5000,
     },
   },
 })

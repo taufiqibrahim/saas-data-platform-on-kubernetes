@@ -17,7 +17,8 @@ export const WorkspaceProvisioning = () => {
 
     console.log(formData, data)
     create('workspaces', { data }, {
-      onSuccess: () => navigate('/workspaces')
+      onSuccess: () => navigate('/workspaces'),
+      onError: () => {}
     });
   };
 

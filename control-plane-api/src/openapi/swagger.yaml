@@ -434,8 +434,8 @@ components:
       type: oauth2
       flows:
         authorizationCode:
-          authorizationUrl: http://localhost:5080/realms/controlplane/protocol/openid-connect/auth
-          tokenUrl: http://localhost:5080/realms/controlplane/protocol/openid-connect/token
+          authorizationUrl: http://localhost:5980/realms/controlplane/protocol/openid-connect/auth
+          tokenUrl: http://localhost:5980/realms/controlplane/protocol/openid-connect/token
           scopes:
             openid: OpenID Connect scope
             profile: Access to your profile information

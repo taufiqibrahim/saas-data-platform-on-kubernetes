@@ -16,8 +16,8 @@ export const systemRoles = [
 export const systemPrincipals = [
   {
     uid: 'e64cf263-ef74-425c-b22e-d32f613f4f49',
-    email: 'admin@saas.localhost',
-    externalId: 'user:admin@saas.localhost',
+    email: 'admin@saas.internal',
+    externalId: 'user:admin@saas.internal',
     kind: 'user'
   },
 ];

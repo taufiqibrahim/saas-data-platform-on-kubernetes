@@ -15,7 +15,8 @@ import { DataTable, List } from "@/components/admin";
 export const PlatformProviderList = () => (
   <List title={"Platform Providers"} pagination={false}>
     <DataTable bulkActionButtons={false}>
-      <DataTable.Col source="displayName" label="Name" />
+      <DataTable.Col source="name" label="Name" />
+      <DataTable.Col source="displayName" label="Display Name" />
       {/* <DataTable.Col
         source="displayName"
         label="Regions"
