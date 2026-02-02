@@ -1,5 +1,6 @@
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -10,7 +11,7 @@ generator client {
 //    COMMON ENUMS
 // ****************************************************************************
 enum PlatformProviderNameEnum {
-  STANDARD_KUBERNETES
+  KUBERNETES
   AWS_EKS
   ALICLOUD_ACK
 }

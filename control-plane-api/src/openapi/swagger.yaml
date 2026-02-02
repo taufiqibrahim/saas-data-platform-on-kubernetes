@@ -441,7 +441,7 @@ components:
             profile: Access to your profile information
             email: Access to your email
 info:
-  title: saas-control-plane-api
+  title: sparqd-control-plane-api
   description: API documentation for the control plane service
   version: 1.0.0
   license:

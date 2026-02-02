@@ -37,6 +37,7 @@ Next, run this:
 pnpm install
 
 # Initialise development (generate tsoa spec & routes)
+npx prisma migrate
 pnpm dev:init
 
 # [OPTIONAL] Copy the generated swagger to docs
