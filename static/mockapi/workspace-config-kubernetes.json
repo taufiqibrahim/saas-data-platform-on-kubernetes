@@ -1,0 +1,47 @@
+{
+  "uid": "83ef9fc3-159c-43fc-a31f-0d4575dc373c",
+  "extWorkspaceId": "w-12345",
+  "name": "Example workspace",
+  "description": "Example workspace description",
+  "status": "PROVISIONING",
+  "workspaceApps": [],
+  "_workspaceApps": [
+    {
+      "uid": "uid",
+      "name": "jupyterhub",
+      "version": "4.3.0",
+      "status": "PROVISIONING",
+      "config": [],
+      "parameter": {
+        "enabled": true
+      },
+      "secrets": [
+        {
+          "uid": "uid",
+          "type": "database",
+          "generator": true
+        },
+        {
+          "uid": "uid",
+          "type": "git-ssh",
+          "generator": false,
+          "value": ""
+        },
+        {
+          "uid": "uid",
+          "type": "helm-values",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "storage": {},
+  "network": {},
+  "createdAt": "2026-01-27T03:38:11.090Z",
+  "createdBy": {
+    "uid": "string",
+    "email": "string",
+    "fullName": "string"
+  },
+  "updatedAt": "2026-01-27T03:38:11.090Z"
+}
