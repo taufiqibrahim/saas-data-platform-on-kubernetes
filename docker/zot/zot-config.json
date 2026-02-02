@@ -8,13 +8,7 @@
   },
   "http": {
     "address": "0.0.0.0",
-    "port": "5000",
-    "auth": {
-      "htpasswd": {
-        "path": "auth/data/htpasswd"
-      },
-      "apikey": true
-    }
+    "port": "5000"
   },
   "log": {
     "level": "info"
@@ -27,7 +21,7 @@
       "enable": true
     },
     "sync": {
-      "enable": true,
+      "enable": false,
       "credentialsFile": "/etc/zot/credentials.json",
       "registries": [
         {
