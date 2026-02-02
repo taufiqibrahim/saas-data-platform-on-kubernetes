@@ -1,6 +1,6 @@
 #!/bin/bash
 # Example
-# ROOT_CA_PATH=./docker/step-ca/certs/root_ca.crt ./deployments/tenants/deploy-tenant-cluster.sh
+# DOCKER_HOST_IP=192.168.1.4 ROOT_CA_PATH=./docker/step-ca/certs/root_ca.crt ./deployments/tenants/deploy-tenant-cluster.sh
 set -e
 
 # Colors for output
@@ -12,6 +12,10 @@ NC='\033[0m' # No Color
 # -----------------------------------------------------------------------------
 # Variables
 CLOUDNATIVEPG_VERSION=1.28
+CERT_MANAGER_VERSION=v1.14.0
+EXTERNAL_DNS_VERSION=1.20.0
+INGRESS_NGINX_VERSION=4.14.2
+
 CLUSTER_NAME=$1
 DEFAULT_BRANDING=saas
 DEFAULT_KUBEVELA_HELM_URI=oci://zot.saas.internal/charts/vela-core:1.10.6-saas.1
@@ -119,6 +123,124 @@ EOF
     done
 }
 
+ensure_helm() {
+    log_empty
+    log_info "Adding Helm repositories..."
+    helm repo add jetstack https://charts.jetstack.io
+    helm repo add external-secrets https://charts.external-secrets.io
+    helm repo add argo https://argoproj.github.io/argo-helm
+    helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo update
+}
+
+ensure_cert_manager() {
+    log_empty
+    log_info "Installing cert-manager"
+    helm upgrade --install cert-manager jetstack/cert-manager \
+        --namespace cert-manager \
+        --create-namespace \
+        --version ${CERT_MANAGER_VERSION} \
+        --set installCRDs=true \
+        --wait
+}
+
+ensure_cluster_issuer() {
+    log_empty
+    log_info "Creating step-ca ClusterIssuer"
+
+    # Encode root CA certificate
+    ROOT_CA_BASE64=$(cat "$ROOT_CA_PATH" | base64 -w 0)
+
+    # Create the ClusterIssuer YAML with substitutions
+    cat > /tmp/step-ca-clusterissuer.yaml <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: step-ca-root-cert-secret
+  namespace: cert-manager
+type: Opaque
+data:
+  ca.crt: ${ROOT_CA_BASE64}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: step-ca-acme
+spec:
+  acme:
+    server: ${STEPCA_BASE_URL}/acme/acme/directory
+    email: ${EMAIL}
+    privateKeySecretRef:
+      name: step-ca-acme-account-key
+    skipTLSVerify: false
+    caBundle: ${ROOT_CA_BASE64}
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+EOF
+
+    kubectl apply -f /tmp/step-ca-clusterissuer.yaml
+    rm /tmp/step-ca-clusterissuer.yaml
+}
+
+ensure_external_secret() {
+    log_empty
+    log_info "Installing external secret operator"
+    helm upgrade --install external-secrets \
+    external-secrets/external-secrets \
+        -n external-secrets \
+        --create-namespace \
+        # --set installCRDs=false
+}
+
+ensure_external_dns() {
+    log_empty
+    log_info "Installing external-dns"
+    # registry.k8s.io -> trouble with KIND
+    # Create external-dns values with substitutions
+    # A more complete example with comments can be found in
+    # deployments/saas/bootstrap/external-dns/external-dns-coredns-values.yaml
+    # Reference: https://kubernetes-sigs.github.io/external-dns/v0.20.0/docs/tutorials/coredns-etcd/#3-configure-externaldns
+    cat > /tmp/external-dns-values.yaml <<EOF
+provider:
+  name: coredns
+env:
+  - name: ETCD_URLS
+    value: "http://${DOCKER_HOST_IP}:2379"
+txtOwnerId: saas-cluster
+txtPrefix: external-dns-
+# annotationFilter: cluster-name=saas-cluster
+# domainFilters:
+#   - saas.internal
+sources:
+  - service
+  - ingress
+policy: sync
+logLevel: info
+interval: 1m
+rbac:
+  create: true
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+EOF
+    
+    helm upgrade --install external-dns external-dns/external-dns \
+    --namespace external-dns \
+    --create-namespace \
+    --version ${EXTERNAL_DNS_VERSION} \
+    -f /tmp/external-dns-values.yaml \
+    --wait
+
+    rm -f /tmp/external-dns-values.yaml
+}
+
 ensure_cloudnative_pg() {
     log_info "Installing addon CloudNativePG operator..."
     curl -sSfL \
@@ -148,9 +270,10 @@ ensure_kubevela() {
 # --------------------------------------------------------------------------------------
 log_section "**** Tenant cluster create script ****"
 log_empty
+
 check_root_ca
 ensure_kubectl
-ensure_vela
+ensure_helm
 
 # Check if cluster already exists
 if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
@@ -162,7 +285,14 @@ fi
 kubectl create namespace ${SYSTEM_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace ${WORKLOAD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
+ensure_cert_manager
+ensure_cluster_issuer
+ensure_external_secret
+ensure_external_dns
+
 ensure_cloudnative_pg
+
+ensure_vela
 ensure_kubevela
 
 log_empty

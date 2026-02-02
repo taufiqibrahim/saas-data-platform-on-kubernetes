@@ -4,8 +4,8 @@
   "name": "Example workspace",
   "description": "Example workspace description",
   "status": "PROVISIONING",
-  "workspaceApps": [],
-  "_workspaceApps": [
+  "_workspaceApps": [],
+  "workspaceApps": [
     {
       "uid": "uid",
       "name": "jupyterhub",
