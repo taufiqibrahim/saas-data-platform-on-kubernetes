@@ -1,0 +1,10 @@
+annotations:
+  addon.name: jupyterhub
+apiVersion: v2
+appVersion: 0.0.1
+description: SaaS Jupyterhub workspace app addon.
+keywords:
+- workspaceapps
+name: jupyterhub
+type: library
+version: 0.0.1

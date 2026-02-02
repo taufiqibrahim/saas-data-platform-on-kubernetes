@@ -1,0 +1,48 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: workspaces.platform.saas.internal
+spec:
+  group: platform.saas.internal
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                extWorkspaceId:
+                  type: string
+                  description: "External workspace ID defined by SaaS side"
+              required:
+                - extWorkspaceId
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: High-level lifecycle phase
+                  enum:
+                    - Pending
+                    - Reconciling
+                    - ReconciliationError
+                    - Ready
+                    - Failed
+                    - Deleting
+                    - DeletionBlocked
+                message:
+                  type: string
+                lastReconcileTime:
+                  type: string
+                  format: date-time
+  scope: Namespaced
+  names:
+    plural: workspaces
+    singular: workspace
+    kind: Workspace
+    shortNames:
+      - ws

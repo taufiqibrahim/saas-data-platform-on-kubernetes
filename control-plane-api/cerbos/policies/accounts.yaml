@@ -1,0 +1,63 @@
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "account"
+  rules:
+
+    # ─────────────────────────────
+    # Tenant / Account Owner
+    # Lists only owned accounts
+    # ─────────────────────────────
+    - actions:
+        - "account:listOwnedAccounts"
+      effect: EFFECT_ALLOW
+      roles:
+        - "*"
+      condition:
+        match:
+          expr: >
+            request.principal.attr.account_roles != null &&
+            "AccountOwner" in request.principal.attr.account_roles
+
+    # ─────────────────────────────
+    # System
+    # Lists all accounts
+    # ─────────────────────────────
+    - actions:
+        - "account:listAllAccounts"
+      effect: EFFECT_ALLOW
+      roles:
+        - "SystemRole"
+
+    # ─────────────────────────────
+    # System
+    # Provision account
+    # ─────────────────────────────
+    - actions:
+        - "account:provisionAccount"
+      effect: EFFECT_ALLOW
+      roles:
+        - "SystemRole"
+
+    # ─────────────────────────────
+    # System: get any account
+    # ─────────────────────────────
+    - actions:
+        - "account:getAccount"
+      effect: EFFECT_ALLOW
+      roles:
+        - "SystemRole"
+
+    # ─────────────────────────────
+    # Account owner or member: get owned account
+    # ─────────────────────────────
+    - actions:
+        - "account:getAccount"
+      effect: EFFECT_ALLOW
+      roles:
+        - "UserRole"
+      condition:
+        match:
+          expr: >
+            request.principal.attr.account_role in
+            ["AccountOwner", "AccountMember"]

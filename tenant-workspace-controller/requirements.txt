@@ -1,0 +1,6 @@
+kopf==1.41.0
+kubernetes==35.0.0
+pydantic==2.12.5
+pydantic-settings==2.12.0
+PyYAML==6.0.3
+requests==2.32.5

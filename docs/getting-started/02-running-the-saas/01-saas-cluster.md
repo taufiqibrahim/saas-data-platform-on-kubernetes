@@ -77,4 +77,8 @@ status:
 
 Solution:
 
-Pre-pull the image on the host and load it into KIND: docker pull nicolaka/netshoot:latest && kind load docker-image nicolaka/netshoot:latest --name <cluster-name>
+Pre-pull the image on the host and load it into KIND:
+```bash
+docker pull nicolaka/netshoot:latest
+kind load docker-image nicolaka/netshoot:latest --name=saas-cluster
+```

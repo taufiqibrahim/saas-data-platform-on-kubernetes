@@ -1,0 +1,35 @@
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: "workspace"
+  rules:
+
+    # ─────────────────────────────
+    # Tenant
+    # Provision workspace
+    # ─────────────────────────────
+    - actions:
+        - "workspace:provisionWorkspace"
+      effect: EFFECT_ALLOW
+      roles:
+        - "UserRole"
+
+    # ─────────────────────────────
+    # Tenant
+    # Get a workspace
+    # ─────────────────────────────
+    - actions:
+        - "workspace:getWorkspace"
+      effect: EFFECT_ALLOW
+      roles:
+        - "UserRole"
+
+    # ─────────────────────────────
+    # Tenant
+    # Get a workspace
+    # ─────────────────────────────
+    - actions:
+        - "workspace:createWorkspaceBootstrapToken"
+      effect: EFFECT_ALLOW
+      roles:
+        - "UserRole"

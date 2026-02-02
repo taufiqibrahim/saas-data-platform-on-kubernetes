@@ -1,0 +1,7 @@
+apiVersion: platform.saas.internal/v1alpha1
+kind: Workspace
+metadata:
+  name: w-12345
+  namespace: saas-workload
+spec:
+  extWorkspaceId: ws-12345

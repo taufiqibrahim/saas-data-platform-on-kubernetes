@@ -1,0 +1,69 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: workspaceapplications.platform.saas.internal
+spec:
+  group: platform.saas.internal
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {} 
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Application name
+                version:
+                  type: string
+                  description: Application version
+                workspace:
+                  type: string
+                  description: Parent workspace name
+                config:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+              required:
+                - name
+                - workspace
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Creating
+                    - Ready
+                    - Reconciling
+                    - Failed
+                    - Deleting
+                    - DeletionFailed
+                error:
+                  type: string
+                lastReconcileTime:
+                  type: string
+                  format: date-time
+      additionalPrinterColumns:
+        - name: Workspace
+          type: string
+          jsonPath: .spec.workspace
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: workspaceapplications
+    singular: workspaceapplication
+    kind: WorkspaceApplication
+    shortNames:
+      - wsa
+      - wsapp

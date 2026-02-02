@@ -1,0 +1,7 @@
+description: SaaS Jupyterhub workspace app addon.
+icon: ""
+invisible: false
+name: jupyterhub
+tags:
+- workspaceapps
+version: 0.0.1

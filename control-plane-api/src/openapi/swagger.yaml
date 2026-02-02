@@ -1,0 +1,890 @@
+openapi: 3.0.0
+components:
+  examples: {}
+  headers: {}
+  parameters: {}
+  requestBodies: {}
+  responses: {}
+  schemas:
+    CreatedByInfo:
+      properties:
+        uid:
+          type: string
+        email:
+          type: string
+        externalId:
+          type: string
+      required:
+        - uid
+        - email
+      type: object
+      additionalProperties: false
+    WorkspaceResponse:
+      properties:
+        uid:
+          type: string
+          description: Workspace unique ID
+          example: 83ef9fc3-159c-43fc-a31f-0d4575dc373c
+        name:
+          type: string
+          description: Workspace name
+          example: Example workspace
+        description:
+          type: string
+          nullable: true
+          description: Workspace description
+          example: Example workspace description
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: "#/components/schemas/CreatedByInfo"
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - uid
+        - name
+        - status
+        - createdAt
+        - createdBy
+        - updatedAt
+      type: object
+      additionalProperties: false
+    PaginationInfo:
+      properties:
+        currentPage:
+          type: number
+          format: double
+        totalPages:
+          type: number
+          format: double
+        totalData:
+          type: number
+          format: double
+        limit:
+          type: number
+          format: double
+        hasNextPage:
+          type: boolean
+        hasPreviousPage:
+          type: boolean
+      required:
+        - currentPage
+        - totalPages
+        - totalData
+        - limit
+        - hasNextPage
+        - hasPreviousPage
+      type: object
+      additionalProperties: false
+    ListWorkspacesResponse:
+      properties:
+        data:
+          items:
+            $ref: "#/components/schemas/WorkspaceResponse"
+          type: array
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        serverTime:
+          type: string
+      required:
+        - data
+        - pagination
+      type: object
+      additionalProperties: false
+    ValidateErrorJSON:
+      properties:
+        message:
+          type: string
+          enum:
+            - Validation failed
+          nullable: false
+        details:
+          properties: {}
+          additionalProperties: {}
+          type: object
+      required:
+        - message
+        - details
+      type: object
+      additionalProperties: false
+    CreateWorkspaceRequestBody:
+      properties:
+        name:
+          type: string
+          description: Workspace name
+          example: Example workspace
+        description:
+          type: string
+          nullable: true
+          description: Workspace description
+          example: Example workspace description
+        extAccountId:
+          type: string
+          description: External account ID
+        extWorkspaceId:
+          type: string
+          description: External workspace ID
+          example: w-123456789
+      required:
+        - name
+        - extAccountId
+      type: object
+      additionalProperties: false
+    BootstrapWorkspaceClusterResponse:
+      properties:
+        token:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiredAt:
+          type: string
+          format: date-time
+      required:
+        - token
+        - createdAt
+        - expiredAt
+      type: object
+      additionalProperties: false
+    PlatformProviderRegionResponse:
+      properties:
+        uid:
+          type: string
+          description: Unique ID
+          example: 83ef9fc3-159c-43fc-a31f-0d4575dc373c
+        name:
+          type: string
+          description: Region name
+          example: ap-southeast-1
+        displayName:
+          type: string
+          description: Region display name
+          example: Singapore
+      required:
+        - uid
+        - name
+        - displayName
+      type: object
+      additionalProperties: false
+    PlatformProviderWithRegionsResponse:
+      properties:
+        uid:
+          type: string
+          description: Unique ID
+          example: 83ef9fc3-159c-43fc-a31f-0d4575dc373c
+        name:
+          type: string
+          description: Platform provider name
+          example: AWS_EKS
+        displayName:
+          type: string
+          description: Platform provider display name
+          example: Amazon Elastic Kubernetes Service (EKS)
+        regions:
+          items:
+            $ref: "#/components/schemas/PlatformProviderRegionResponse"
+          type: array
+      required:
+        - uid
+        - name
+        - displayName
+        - regions
+      type: object
+      additionalProperties: false
+    ListPlatformProvidersResponse:
+      properties:
+        data:
+          items:
+            $ref: "#/components/schemas/PlatformProviderWithRegionsResponse"
+          type: array
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        serverTime:
+          type: string
+      required:
+        - data
+        - pagination
+      type: object
+      additionalProperties: false
+    ListPlatformProviderRegionsResponse:
+      properties:
+        data:
+          items:
+            $ref: "#/components/schemas/PlatformProviderRegionResponse"
+          type: array
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        serverTime:
+          type: string
+      required:
+        - data
+        - pagination
+      type: object
+      additionalProperties: false
+    HealthStatus:
+      type: string
+      enum:
+        - ok
+        - error
+        - unknown
+    HealthCheckResponse:
+      properties:
+        status:
+          $ref: "#/components/schemas/HealthStatus"
+        uptime:
+          type: number
+          format: double
+        timestamp:
+          type: number
+          format: double
+        services:
+          properties:
+            redis:
+              $ref: "#/components/schemas/HealthStatus"
+            keycloak:
+              $ref: "#/components/schemas/HealthStatus"
+          required:
+            - redis
+            - keycloak
+          type: object
+      required:
+        - status
+        - uptime
+        - timestamp
+        - services
+      type: object
+      additionalProperties: false
+    PrincipalResponse:
+      properties:
+        uid:
+          type: string
+          description: Unique ID
+          example: 83ef9fc3-159c-43fc-a31f-0d4575dc373c
+        externalId:
+          type: string
+          description: |-
+            Principal external ID
+            Examples: user:123 | agent:cluster-1
+          example: user:joe@example.com
+        kind:
+          type: string
+          description: Principal kind
+          example: user
+        email:
+          type: string
+          description: Principal email
+          example: joe@example.com
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - uid
+        - externalId
+        - kind
+        - email
+        - createdAt
+      type: object
+      additionalProperties: false
+    ListPrincipalsResponse:
+      properties:
+        data:
+          items:
+            $ref: "#/components/schemas/PrincipalResponse"
+          type: array
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        serverTime:
+          type: string
+      required:
+        - data
+        - pagination
+      type: object
+      additionalProperties: false
+    _36_Enums.AccountPlanEnum:
+      type: string
+      enum:
+        - free
+        - enterprise
+    AccountPlanEnum:
+      $ref: "#/components/schemas/_36_Enums.AccountPlanEnum"
+    PlatformProviderResponse:
+      properties:
+        uid:
+          type: string
+          description: Unique ID
+          example: 83ef9fc3-159c-43fc-a31f-0d4575dc373c
+        name:
+          type: string
+          description: Platform provider name
+          example: AWS_EKS
+        displayName:
+          type: string
+          description: Platform provider display name
+          example: Amazon Elastic Kubernetes Service (EKS)
+      required:
+        - uid
+        - name
+        - displayName
+      type: object
+      additionalProperties: false
+    AccountResponse:
+      properties:
+        uid:
+          type: string
+          description: Unique ID
+          example: 83ef9fc3-159c-43fc-a31f-0d4575dc373c
+        extAccountId:
+          type: string
+          description: External account ID
+          example: abc1234
+        name:
+          type: string
+          description: Account name
+          example: Example Account
+        plan:
+          $ref: "#/components/schemas/AccountPlanEnum"
+        platformProvider:
+          $ref: "#/components/schemas/PlatformProviderResponse"
+        platformProviderRegion:
+          $ref: "#/components/schemas/PlatformProviderRegionResponse"
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: "#/components/schemas/CreatedByInfo"
+      required:
+        - uid
+        - name
+        - plan
+        - platformProvider
+        - platformProviderRegion
+        - status
+        - createdAt
+        - updatedAt
+        - createdBy
+      type: object
+      additionalProperties: false
+    ListAccountsResponse:
+      properties:
+        data:
+          items:
+            $ref: "#/components/schemas/AccountResponse"
+          type: array
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        serverTime:
+          type: string
+      required:
+        - data
+        - pagination
+      type: object
+      additionalProperties: false
+    ProvisionAccountRequestBody:
+      properties:
+        initialAccountOwnerEmail:
+          type: string
+          description: Initial account owner email
+          example: joe@example.com
+        createInitialAccountOwner:
+          type: boolean
+          description: Create initial account owner
+          example: true
+        extAccountId:
+          type: string
+          description: External account ID
+        accountPlan:
+          $ref: "#/components/schemas/AccountPlanEnum"
+          description: Account plan
+        accountName:
+          type: string
+          description: Account name
+          example: ACME Corp
+        platformProviderRegionUid:
+          type: string
+          description: Region unique ID
+          example: 1fa42981-f87d-4cec-8ebe-3eb262037ce3
+        platformProviderUid:
+          type: string
+          description: Platform provider unique ID
+          example: 8ad0b3a3-3b3c-47ba-99ec-754dcf09a5b1
+      required:
+        - initialAccountOwnerEmail
+        - accountPlan
+        - platformProviderUid
+      type: object
+  securitySchemes:
+    bearerAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+    pkceSSO:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: http://localhost:5980/realms/controlplane/protocol/openid-connect/auth
+          tokenUrl: http://localhost:5980/realms/controlplane/protocol/openid-connect/token
+          scopes:
+            openid: OpenID Connect scope
+            profile: Access to your profile information
+            email: Access to your email
+info:
+  title: sparqd-control-plane-api
+  description: API documentation for the control plane service
+  version: 1.0.0
+  license:
+    name: ISC
+paths:
+  /accounts/{accountUid}:
+    get:
+      operationId: GetAccount
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/AccountResponse"
+                nullable: true
+      description: |-
+        Retrieves the detail of an account.
+        Supply the unique account UID.
+      summary: Get account detail
+      tags:
+        - Accounts
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: path
+          name: accountUid
+          required: true
+          schema:
+            type: string
+  /workspaces:
+    get:
+      operationId: ListWorkspaces
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListWorkspacesResponse"
+      description: Retrieves the list of workspaces.
+      summary: List workspaces
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: query
+          name: _filters
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _sort
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _order
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            format: double
+            type: number
+        - in: query
+          name: limit
+          required: false
+          schema:
+            format: double
+            type: number
+    post:
+      operationId: CreateWorkspace
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/WorkspaceResponse"
+                nullable: true
+        "400":
+          description: Validation Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateErrorJSON"
+      description: |-
+        Create a workspace.
+        Supply the workspace create input body.
+      summary: Create workspace
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkspaceRequestBody"
+  /workspaces/{workspaceUid}:
+    get:
+      operationId: GetWorkspace
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/WorkspaceResponse"
+                nullable: true
+      description: |-
+        Retrieves the detail of a workspace.
+        Supply the unique workspace UID.
+      summary: Get workspace detail
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: path
+          name: workspaceUid
+          required: true
+          schema:
+            type: string
+  /workspaces/{workspaceUid}/bootstrapCluster:
+    post:
+      operationId: CreateBootstrapToken
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BootstrapWorkspaceClusterResponse"
+        "400":
+          description: Validation Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateErrorJSON"
+      description: Bootstrap new workspace cluster
+      summary: Bootstrap new workspace cluster
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: path
+          name: workspaceUid
+          required: true
+          schema:
+            type: string
+  /admin/accounts:
+    get:
+      operationId: ListAccounts
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAccountsResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+      description: Retrieves the list of accounts.
+      summary: List accounts
+      tags:
+        - Admin API
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: query
+          name: _filters
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _sort
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _order
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            format: double
+            type: number
+        - in: query
+          name: limit
+          required: false
+          schema:
+            format: double
+            type: number
+    post:
+      operationId: ProvisionAccount
+      responses:
+        "201":
+          description: ""
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/AccountResponse"
+                nullable: true
+      description: Provision new account
+      summary: Provision new account
+      tags:
+        - Admin API
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProvisionAccountRequestBody"
+  /admin/principals:
+    get:
+      operationId: ListPrincipals
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPrincipalsResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+      description: Retrieves the list of principals.
+      summary: List principals
+      tags:
+        - Admin API
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: query
+          name: _filters
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _sort
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _order
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            format: double
+            type: number
+        - in: query
+          name: limit
+          required: false
+          schema:
+            format: double
+            type: number
+  /health:
+    get:
+      operationId: GetHealthCheck
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheckResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+      description: Retrieves the API health checks.
+      summary: API Health Checks
+      tags:
+        - Health
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters: []
+  /platformProviders:
+    get:
+      operationId: ListPlatformProviders
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPlatformProvidersResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+      description: Retrieves the list of supported platform providers.
+      summary: List platform providers
+      tags:
+        - Platform Providers
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters: []
+  /platformProviders/{platformProviderUid}/regions:
+    get:
+      operationId: ListPlatformProviderRegions
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPlatformProviderRegionsResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+      description: Retrieves the list of supported regions of a platform provider.
+      summary: List platform provider regions
+      tags:
+        - Platform Providers
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: path
+          name: platformProviderUid
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: _filters
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _sort
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: _order
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            format: double
+            type: number
+        - in: query
+          name: limit
+          required: false
+          schema:
+            format: double
+            type: number
+servers:
+  - url: http://localhost:5001/api/v1
