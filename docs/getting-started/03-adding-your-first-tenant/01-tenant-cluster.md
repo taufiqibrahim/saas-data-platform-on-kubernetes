@@ -61,6 +61,7 @@ DOCKER_HOST_IP=<docker-host-ip> ROOT_CA_PATH=./docker/step-ca/certs/root_ca.crt 
 
 ```bash
 skopeo copy --dest-tls-verify=false docker://nicolaka/netshoot:latest docker://zot.saas.internal/nicolaka/netshoot:latest
+crane --insecure copy alpine:latest zot.saas.internal/alpine:latest
 ```
 
 ## Troubleshootings
