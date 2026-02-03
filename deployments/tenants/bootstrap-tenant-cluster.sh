@@ -231,6 +231,23 @@ ensure_kubevela() {
     vela addon enable fluxcd namespace=$SYSTEM_NAMESPACE
 }
 
+ensure_password_generator() {
+    log_info "Creating ClusterGenerator db-password-generator..."
+    cat <<EOF | kubectl apply -n ${WORKLOAD_NAMESPACE} -f -
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: db-password-generator
+spec:
+  length: 16
+  digits: 5
+  symbols: 3
+  symbolCharacters: "-_$@"
+  noUpper: false
+  allowRepeat: true
+EOF
+}
+
 bootstrap_external_secret_store() {
     # Configuration
     TENANT_ID="${1}"
@@ -281,15 +298,6 @@ spec:
         tokenSecretRef:
           name: "openbao-token"
           key: "token"
-    #   tls:
-    #     certSecretRef:
-    #       namespace: ...
-    #       name: "my-cert-secret"
-    #       key: "tls.crt"
-    #     keySecretRef:
-    #       namespace: ...
-    #       name: "my-cert-secret"
-    #       key: "tls.key"
 EOF
 
     # 4. Verify the SecretStore
@@ -320,6 +328,7 @@ ensure_cluster_issuer
 ensure_external_secret
 ensure_external_dns
 
+ensure_password_generator
 bootstrap_external_secret_store $TENANT_ID $TENANT_KEYVAULT_TOKEN
 
 ensure_cloudnative_pg
