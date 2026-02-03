@@ -30,6 +30,7 @@ BRANDING=${BRANDING-$DEFAULT_BRANDING}
 SYSTEM_NAMESPACE="${BRANDING}-system"
 WORKLOAD_NAMESPACE="${BRANDING}-workload"
 KUBEVELA_SYSTEM_NAMESPACE=vela-system
+
 KUBEBUILDER_LOGGER_OPTS='{"development":false}'
 
 # -----------------------------------------------------------------------------
@@ -155,7 +156,7 @@ ensure_external_secret() {
         --namespace external-secrets \
         --create-namespace \
         --wait \
-        --set global.repository=zot.saas.internal/external-secrets/external-secrets \
+        # --set global.repository=zot.saas.internal/external-secrets/external-secrets \
         # --set installCRDs=false
 }
 
@@ -309,21 +310,21 @@ log_empty
 
 check_root_ca
 ensure_kubectl
-# ensure_helm
+ensure_helm
 
-# kubectl create namespace ${SYSTEM_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-# kubectl create namespace ${WORKLOAD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace ${SYSTEM_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace ${WORKLOAD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
-# ensure_cert_manager
-# ensure_cluster_issuer
-# ensure_external_secret
-# ensure_external_dns
+ensure_cert_manager
+ensure_cluster_issuer
+ensure_external_secret
+ensure_external_dns
 
 bootstrap_external_secret_store $TENANT_ID $TENANT_KEYVAULT_TOKEN
 
-# ensure_cloudnative_pg
-# ensure_vela
-# ensure_kubevela
+ensure_cloudnative_pg
+ensure_vela
+ensure_kubevela
 
 log_empty
 log_info "Tenant cluster bootstrap finished"
