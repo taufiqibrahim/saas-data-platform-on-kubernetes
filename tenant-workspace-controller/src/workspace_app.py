@@ -153,13 +153,13 @@ def cleanup_workspace_app_resources(
 
     # Check if Addon exist
     addon_name = f"addon-{name}"
-    addon_exists = get_addon(addon_name, logger)
+    addon = get_addon(addon_name, logger)
     addon_status = (
-        addon_exists.get("status", {}).get("status") if addon_exists else None  # type: ignore
+        addon.get("status", {}).get("status") if addon else None  # type: ignore
     )
 
     # Uninstall the addon
-    if addon_exists:
+    if addon:
         uninstall_vela_addon(
             addon_name=name,
             logger=logger,
@@ -179,13 +179,13 @@ def reconcile_workspace_app(spec, name, namespace, logger):
     addon_name = f"addon-{name}"
     addon_version = spec["version"]
     addon_identifier = get_addon_identifier(name=name)
-    addon_exists = get_addon(addon_name, logger)
+    addon = get_addon(addon_name, logger)
     # addon_status = (
-    #     addon_exists.get("status", {}).get("status") if addon_exists else None  # type: ignore
+    #     addon.get("status", {}).get("status") if addon else None  # type: ignore
     # )
 
     # # Install the addon if not running
-    if addon_exists is None:
+    if addon is None:
         install_vela_addon(
             addon_identifier=addon_identifier,
             addon_parameters={},
@@ -198,133 +198,3 @@ def reconcile_workspace_app(spec, name, namespace, logger):
     # raise NotImplementedError
 
     logger.info(f"Reconciled workspace app: {namespace}/{name}")
-
-
-# def compute_digest(spec):
-#     spec_bytes = json.dumps(spec, sort_keys=True).encode("utf-8")
-#     return hashlib.sha256(spec_bytes).hexdigest()
-
-
-# def desired_workspace_application_cr(app_name, workspace_name, status, namespace):
-#     return {
-#         "apiVersion": f"{app_settings.platform_group}/{app_settings.platform_version}",
-#         "kind": "WorkspaceApplication",
-#         "metadata": {
-#             "name": app_name,
-#             "namespace": namespace,
-#         },
-#         "spec": {
-#             "workspaceRef": workspace_name,
-#             "name": app_name,
-#             "status": status,
-#         },
-#     }
-
-
-# def get_workspace_app(name: str, namespace: str, logger: logging.Logger):
-#     """
-#     Get a specific WorkspaceApplication CRD
-
-#     Args:
-#         name: Name of the workspace application
-#         namespace: Namespace of the workspace application
-#         logger: Logger instance
-
-#     Returns:
-#         WorkspaceApplication resource as dictionary or None if not found
-#     """
-#     try:
-#         api = client.CustomObjectsApi()
-
-#         app = api.get_namespaced_custom_object(
-#             group=app_settings.platform_group,
-#             version=app_settings.platform_version,
-#             namespace=namespace,
-#             plural="workspaceapplications",
-#             name=name,
-#         )
-
-#         logger.info(f"Workspace app: {name} in {namespace}")
-#         return app
-
-#     except ApiException as e:
-#         if e.status == 404:
-#             logger.info(f"Workspace app not found: {name} in {namespace}")
-#             return None
-#         else:
-#             logger.error(f"Failed to get workspace app: {e}")
-#             raise
-
-
-# def count_workspace_apps_for_workspace(
-#     workspace_name: str, logger: logging.Logger
-# ) -> int:
-#     """
-#     Count how many workspace applications belong to a specific workspace
-
-#     Args:
-#         workspace_name: Name of the workspace
-#         logger: Logger instance
-
-#     Returns:
-#         Number of workspace applications
-#     """
-#     apps = list_workspace_apps_cr(
-#         labels={"workspace.platform.io/name": workspace_name}, logger=logger
-#     )
-#     return len(apps)
-
-
-# def handle_workspace_app_addon(app: WorkspaceAppPollResponse, logger: logging.Logger):
-#     addon_name = f"addon-{app.name}"
-#     logger.info(f"Handling workspace app addon: {addon_name}")
-
-#     # Check if Addon exist
-#     addon_exists = get_addon(addon_name, logger)
-#     addon_status = (
-#         addon_exists.get("status", {}).get("status") if addon_exists else None  # type: ignore
-#     )
-#     print(addon_name, addon_status)
-
-#     # #
-#     # if addon_status != "running" or addon_status is None:
-#     #     install_vela_addon()
-
-
-# @kopf.timer(app_settings.platform_group, app_settings.platform_version, "workspaceapplications", interval=10)  # type: ignore
-# def sync_workspace_app(spec, status, patch, logger, name, namespace, **_):
-#     phase = status.get("phase")
-#     print("phase", phase)
-#     addon_name = "addon-" + name
-
-#     # 1. Ready → do nothing
-#     if phase == "Ready":
-#         return
-
-#     # logger.info(f"Phase: {phase}, syncing {name} in {app_settings.workload_namespace}")
-
-#     # 2. Check if Addon exist
-#     addon_exists = get_addon(addon_name, logger)
-#     addon_status = addon_exists.get('status', {}).get("status") if addon_exists else None
-
-#     # # 3. Decide what to do
-#     # if phase in (None, "Pending") or not addon_exists:
-#     #     patch.status["phase"] = "Reconciling"
-#     #     logger.info(f"Enabling addon: {addon_name}")
-#     #     addon_request = run_vela_addon(
-#     #         ["enable", name, "--dry-run"], logger, capture_output=True
-#     #     )
-#     #     print(addon_request)
-#     #     api.create_namespaced_custom_object(
-#     #         group='core.oam.dev',
-#     #         version='v1beta1',
-#     #         namespace=app_settings.vela_system_namespace,
-#     #         plural="applications",
-#     #         body=yaml.safe_load(str(addon_request)),
-#     #     )
-#     #     return
-
-#     if phase == "Reconciling":
-#         if addon_status == 'running':
-#             logger.info(f"Marking workspace app {name} as Running")
-#             patch.status["phase"] = "Running"
