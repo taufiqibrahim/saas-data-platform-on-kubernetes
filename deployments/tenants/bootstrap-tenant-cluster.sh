@@ -22,6 +22,7 @@ DEFAULT_KUBEVELA_HELM_URI=oci://zot.saas.internal/charts/vela-core:1.10.6-saas.1
 CLOUDNATIVEPG_VERSION=1.28
 CERT_MANAGER_VERSION=v1.14.0
 EXTERNAL_DNS_VERSION=1.20.0
+EXTERNAL_SECRET_VERSION=v1.3.2
 INGRESS_NGINX_VERSION=4.14.2
 
 CLUSTER_NAME=$1
@@ -99,7 +100,7 @@ ensure_helm() {
 
 ensure_cert_manager() {
     log_empty
-    log_info "Installing cert-manager"
+    log_info "Installing cert-manager ${CERT_MANAGER_VERSION}"
     helm upgrade --install cert-manager jetstack/cert-manager \
         --namespace cert-manager \
         --create-namespace \
@@ -150,11 +151,12 @@ EOF
 
 ensure_external_secret() {
     log_empty
-    log_info "Installing external secret operator"
+    log_info "Installing external secret operator ${EXTERNAL_SECRET_VERSION}"
     helm upgrade --install external-secrets \
     external-secrets/external-secrets \
         --namespace external-secrets \
         --create-namespace \
+        --version ${EXTERNAL_SECRET_VERSION} \
         --wait \
         # --set global.repository=zot.saas.internal/external-secrets/external-secrets \
         # --set installCRDs=false
@@ -162,7 +164,7 @@ ensure_external_secret() {
 
 ensure_external_dns() {
     log_empty
-    log_info "Installing external-dns"
+    log_info "Installing external-dns ${EXTERNAL_DNS_VERSION}"
     # registry.k8s.io -> trouble with KIND
     # Create external-dns values with substitutions
     # A more complete example with comments can be found in
@@ -207,7 +209,7 @@ EOF
 }
 
 ensure_cloudnative_pg() {
-    log_info "Installing addon CloudNativePG operator..."
+    log_info "Installing addon CloudNativePG operator ${CLOUDNATIVEPG_VERSION}..."
     curl -sSfL \
       https://raw.githubusercontent.com/cloudnative-pg/artifacts/release-${CLOUDNATIVEPG_VERSION}/manifests/operator-manifest.yaml | \
       kubectl apply --server-side -f -
@@ -216,6 +218,7 @@ ensure_cloudnative_pg() {
 ensure_kubevela() {
     # Allow user to answer n, but continue
     log_info "Installing KubeVela control plane..."
+    rm -rf /tmp/kubevela/
     helm pull $DEFAULT_KUBEVELA_HELM_URI -d /tmp/kubevela --untar
     if ! vela install -f /tmp/kubevela/vela-core -n $KUBEVELA_SYSTEM_NAMESPACE; then
         log_info "KubeVela installation skipped (existing installation preserved). Continuing bootstrap..."
@@ -290,7 +293,7 @@ spec:
   provider:
     vault:
       server: "${OPENBAO_HOST}"
-      path: "secret"
+      path: "secrets"
       version: "v2"
       namespace: "${TENANT_ID}"
       caBundle: "${ROOT_CA_BASE64}"

@@ -51,33 +51,28 @@ curl -X POST \
 # 2. Create policy for full access to tenant namespace
 log_info "📋 Creating OpenBao policy for $TENANT_ID"
 cat > /tmp/${TENANT_ID}-policy.hcl <<EOF
-# Full access to all secrets in this namespace
-path "secret/*" {
+# KV v2: secret values
+path "secrets/data/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
 }
 
-path "secret/metadata/*" {
-  capabilities = ["list", "read", "delete"]
+# KV v2: metadata (REQUIRED for PushSecret)
+path "secrets/metadata/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
 }
 
-# CRITICAL: Allow token to look up itself (required by External Secrets Operator)
+# Required by External Secrets Operator
 path "auth/token/lookup-self" {
   capabilities = ["read"]
 }
 
-# Allow token renewal
 path "auth/token/renew-self" {
   capabilities = ["update"]
 }
 
-# Allow token management within namespace
-path "auth/token/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
-
-# Allow managing KV v2 secret engine
-path "sys/mounts/secret" {
-  capabilities = ["read", "list"]
+# Optional: allow reading mounts
+path "sys/mounts" {
+  capabilities = ["read"]
 }
 EOF
 
@@ -120,7 +115,7 @@ curl -X POST \
     -H "X-Vault-Namespace: $TENANT_ID" \
     -H "Content-Type: application/json" \
     -d '{"type": "kv-v2", "description": "KV v2 secrets for '${TENANT_ID}'"}' \
-    "$OPENBAO_ADDR/v1/sys/mounts/secret" 2>/dev/null || echo "Secret engine already exists"
+    "$OPENBAO_ADDR/v1/sys/mounts/secrets" 2>/dev/null || echo "Secret engine already exists"
 
 # Clean up
 rm -f /tmp/${TENANT_ID}-policy.hcl
