@@ -12,7 +12,7 @@ parameter: {
 	version:   *"4.3.2" | string
 
 	db: {
-		provider:    *"kubernetes" | "aws-rds" | string
+		provider:    *"kubernetes" | "aws-rds" | "alicloud-rds" | string
 		storageSize: *"10Gi" | string
 		password:    *"password" | string
 
@@ -21,27 +21,27 @@ parameter: {
 				instances:  *1 | int
 				database:   *"jupyterhub" | string
 				owner:      *"jupyterhub" | string
-				secretName: *"jupyter-cnpg-secret" | string
+				secretName: *"jupyterhub-db-secret" | string
 
-				superuserSecretName:   *"jupyter-cnpg-superuser-secret" | string
+				superuserSecretName:   *"jupyterhub-db-secret" | string
 				enableSuperuserAccess: *false | bool
 			}
 		}
 
 		if provider == "aws-rds" {
 			rds: {
-				engine:        *"postgres" | "mysql"
+				engine:        *"postgres" | string
+				instanceClass: string
+				region:        string
+			}
+		}
+
+		if provider == "alicloud-rds" {
+			rds: {
+				engine:        *"postgres" | string
 				instanceClass: string
 				region:        string
 			}
 		}
 	}
-
-	// postgres: {
-	// 	// +usage=Name of the Postgres component (CloudNativePG)
-	// 	componentName: *"jupyterhub-postgres" | string
-
-	// 	// +usage=Database name used by JupyterHub
-	// 	database: *"jupyterhub" | string
-	// }
 }
