@@ -5,7 +5,7 @@ import kopf
 import logging
 import os
 import urllib3
-from kubernetes import client, config
+from kubernetes import config
 
 from settings import app_settings
 from workspace import delete_workspace_cr, fetch_workspace, get_workspace_cr
@@ -17,11 +17,15 @@ from workspace_app import (
     reconcile_workspace_app,
 )
 from addon_handlers import get_addon
+from helpers import create_kubernetes_event
 
 urllib3.disable_warnings()
 load_dotenv()
 
 LOCK: asyncio.Lock
+
+# Constants
+WORKSPACE_APPLICATIONS = "workspaceapplications"
 
 # Standard Kubernetes labels
 STANDARD_LABELS = {
@@ -53,38 +57,6 @@ try:
     config.load_incluster_config()
 except:
     config.load_kube_config()
-
-
-async def create_event(body, reason, message, event_type="Normal", logger=None):
-    """Helper to create events selectively"""
-    try:
-        v1 = client.CoreV1Api()
-        meta = body.get("metadata", {})
-
-        event = client.CoreV1Event(
-            metadata=client.V1ObjectMeta(
-                generate_name=f"{meta.get('name')}-", namespace=meta.get("namespace")
-            ),
-            involved_object=client.V1ObjectReference(
-                api_version=body.get("apiVersion"),
-                kind=body.get("kind"),
-                name=meta.get("name"),
-                namespace=meta.get("namespace"),
-                uid=meta.get("uid"),
-            ),
-            reason=reason,
-            message=message,
-            type=event_type,
-            first_timestamp=datetime.now(timezone.utc),
-            last_timestamp=datetime.now(timezone.utc),
-            count=1,
-            source=client.V1EventSource(component="tenant-workspace-controller"),
-        )
-
-        v1.create_namespaced_event(meta.get("namespace"), event)
-    except Exception as e:
-        if logger:
-            logger.error(f"Failed to create event: {e}")
 
 
 @kopf.on.startup()  # type: ignore
@@ -121,7 +93,7 @@ async def workspace_on_create(spec, name, namespace, patch, meta, logger, body, 
     """Async handler for better concurrency"""
     patch.status["phase"] = "Ready"
     patch.status["lastReconcileTime"] = datetime.now(timezone.utc).isoformat()
-    await create_event(body, "Created", "Workspace created", logger=logger)
+    await create_kubernetes_event(body, "Created", "Workspace created", logger=logger)
 
 
 @kopf.on.delete(
@@ -130,7 +102,7 @@ async def workspace_on_create(spec, name, namespace, patch, meta, logger, body, 
 async def workspace_on_delete(spec, name, namespace, patch, meta, logger, body, **_):
     """Async handler for better concurrency"""
     patch.status["phase"] = "Deleting"
-    await create_event(body, "Deleted", "Workspace deleted", logger=logger)
+    await create_kubernetes_event(body, "Deleted", "Workspace deleted", logger=logger)
 
 
 @kopf.timer(
@@ -165,26 +137,26 @@ async def reconcile_workspace(
             )
 
             extWorkspaceId = workspace.extWorkspaceId
-            existing_apps = list_workspace_apps_cr(
+            workspace_app_crs = list_workspace_apps_cr(
                 labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID}, logger=logger
             )
 
             # Handle workspace deletion - check for child apps first
             if workspace.status in ("DELETING"):
                 # Check if any apps still exist using labels
-                existing_apps = list_workspace_apps_cr(
+                workspace_app_crs = list_workspace_apps_cr(
                     labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID},
                     logger=logger,
                 )
 
-                if existing_apps:
+                if workspace_app_crs:
                     logger.warning(
                         f"Cannot delete workspace {name}: "
-                        f"{len(existing_apps)} apps still exist"
+                        f"{len(workspace_app_crs)} apps still exist"
                     )
                     patch.status["phase"] = "DeletionBlocked"
                     patch.status["error"] = (
-                        f"Workspace has {len(existing_apps)} applications "
+                        f"Workspace has {len(workspace_app_crs)} applications "
                         f"that must be deleted first"
                     )
                     return
@@ -206,27 +178,28 @@ async def reconcile_workspace(
                 app_status = app.status
 
                 # Handle workspace app deletion
-                if app.status in ("DELETING"):
-                    delete_workspace_app_cr(
+                if app_status in ("DELETING"):
+                    await delete_workspace_app_cr(
                         name=app_name,
                         logger=logger,
                         namespace=app_namespace,
                     )
                     continue
 
-                if app.status == "DELETED":
+                if app_status == "DELETED":
                     logger.warn(f"Workspace app: {app_name} still marked as DELETED")
                     continue
 
-                #     # Check if workspace app exists (or create it)
-                get_or_create_workspace_app_cr(
-                    name=app_name,
-                    namespace=app_namespace,
-                    # workspace_name=name,  # Parent workspace name
-                    logger=logger,
-                    version=getattr(app, "version", "latest"),
-                    # config=getattr(app, 'config', {})
-                )
+                # Check if workspace app exists (or create it)
+                if app_status == "PROVISIONING":
+                    get_or_create_workspace_app_cr(
+                        name=app_name,
+                        namespace=app_namespace,
+                        # workspace_name=name,  # Parent workspace name
+                        logger=logger,
+                        version=getattr(app, "version", "latest"),
+                        # config=getattr(app, 'config', {})
+                    )
 
         except Exception as e:
             kopf.exception(body, reason="ReconciliationError", message="")
@@ -236,15 +209,25 @@ async def reconcile_workspace(
             raise
 
 
+WORKSPACE_APP_FINALIZER = f"workspaceapplication.{app_settings.platform_group}/cleanup"
+
+
 @kopf.on.create(
-    app_settings.platform_group, app_settings.platform_version, "workspaceapplications"
+    app_settings.platform_group, app_settings.platform_version, WORKSPACE_APPLICATIONS
 )  # type: ignore
 async def workspace_app_on_create(
     spec, name, namespace, patch, meta, logger, body, **_
 ):
     """Async handler for better concurrency"""
     patch.status["phase"] = "Creating"
-    await create_event(body, "Creating", "Workspace app creating", logger=logger)
+    await create_kubernetes_event(
+        body, "Creating", "Workspace app creating", logger=logger
+    )
+
+    # Add custom finalizer to control workspace app deletion
+    existing_finalizers = meta.get("finalizers", [])
+    if WORKSPACE_APP_FINALIZER not in existing_finalizers:
+        patch.metadata["finalizers"] = existing_finalizers + [WORKSPACE_APP_FINALIZER]
 
     # Get existing labels (if any)
     existing_labels = meta.get("labels", {})
@@ -275,7 +258,7 @@ async def workspace_app_on_create(
         logger.error(f"Failed to create: {e}")
         patch.status["phase"] = "Failed"
         patch.status["error"] = str(e)
-        await create_event(
+        await create_kubernetes_event(
             body,
             "Error",
             "Workspace app creation error",
@@ -285,7 +268,7 @@ async def workspace_app_on_create(
         raise
 
 
-# @kopf.on.update(app_settings.platform_group, app_settings.platform_version, "workspaceapplications")  # type: ignore
+# @kopf.on.update(app_settings.platform_group, app_settings.platform_version, WORKSPACE_APPLICATIONS)  # type: ignore
 # def workspace_app_on_update(spec, name, namespace, patch, logger, **_):
 #     """Reconcile on spec changes"""
 #     patch.status["phase"] = "Reconciling"
@@ -303,48 +286,61 @@ async def workspace_app_on_create(
 @kopf.on.delete(
     app_settings.platform_group,
     app_settings.platform_version,
-    "workspaceapplications",
-    retries=5,  # Number of retry attempts
-    backoff=1.5,  # Exponential backoff multiplier
-    timeout=3600,  # Total timeout for all retries
+    WORKSPACE_APPLICATIONS,
+    optional=True,  # Don't let kopf manage its own finalizer - we manage ours
 )  # type: ignore
 async def workspace_app_on_delete(
-    spec, name, namespace, patch, meta, logger, retry, **_
+    spec, name, namespace, patch, meta, logger, body, **_
 ):
-    """Clean up child resources - BLOCKS deletion until complete"""
+    """Trigger addon cleanup - actual deletion waits for timer to remove finalizer"""
 
-    # if retry > 0:
-    #     logger.warning(f"Retry attempt {retry + 1}/5")
-
-    logger.info(f"Deleting workspace app: {name}")
+    logger.info(f"Delete requested for workspace app: {name}")
     patch.status["phase"] = "Deleting"
-    patch.status["retryCount"] = retry
 
-    cleanup_workspace_app_resources(name=name, namespace=namespace, logger=logger)
+    addon_name = f"addon-{name}"
+    addon = get_addon(addon_name, logger)
 
-    logger.info(f"Successfully deleted workspace app: {name}")
+    if addon is not None:
+        addon_status = addon.get("status", {}).get("status")  # type: ignore
+        if addon_status != "deleting":
+            logger.info(f"Triggering uninstall for addon: {addon_name}")
+            cleanup_workspace_app_resources(
+                name=name, namespace=namespace, logger=logger
+            )
+        else:
+            logger.info(f"Addon {addon_name} already deleting")
+    else:
+        logger.info(f"Addon {addon_name} not found, nothing to cleanup")
+
+    await create_kubernetes_event(
+        body,
+        "Deleting",
+        "Workspace app deleting, waiting for addon cleanup",
+        logger=logger,
+    )
+    # Note: Finalizer will be removed by the timer when addon is completely gone
 
 
 # Add timer for drift detection and periodic reconciliation
 @kopf.timer(
     app_settings.platform_group,
     app_settings.platform_version,
-    "workspaceapplications",
+    WORKSPACE_APPLICATIONS,
     interval=10,
-    idle=60.0,  # Start after 60s of no changes
+    # idle=60.0,  # Start after 60s of no changes
 )  # type: ignore
 async def workspace_app_status_sync(
-    spec, name, namespace, status, patch, logger, body, **_
+    spec, name, namespace, status, patch, logger, body, meta, **_
 ):
     """Poll KubeVela Application CR and update WorkspaceApplication status"""
     phase = status.get("phase")
+    addon_name = f"addon-{name}"
 
     # Only process resources in "Reconciling" state
     if phase != "Reconciling":
         return
 
     logger.info(f"Workspace app {name} status={phase}")
-    addon_name = f"addon-{name}"
     addon = get_addon(addon_name, logger)
 
     if addon is None:
@@ -357,7 +353,9 @@ async def workspace_app_status_sync(
         logger.info(f"Addon {addon_name} is running, marking {name} as Ready")
         patch.status["phase"] = "Ready"
         patch.status["lastReadyTime"] = datetime.now(timezone.utc).isoformat()
-        await create_event(body, "Ready", "Workspace app ready", logger=logger)
+        await create_kubernetes_event(
+            body, "Ready", "Workspace app ready", logger=logger
+        )
     elif addon_status == "deleting":
         return
     elif addon_status == "runningWorkflow":
@@ -366,6 +364,6 @@ async def workspace_app_status_sync(
         logger.error(f"Addon {addon_name} failed, marking {name} as Failed")
         patch.status["phase"] = "Failed"
         patch.status["error"] = addon.get("status", {}).get("message", "Addon deployment failed")  # type: ignore
-        await create_event(
+        await create_kubernetes_event(
             body, "Error", "Workspace app error", event_type="Error", logger=logger
         )
