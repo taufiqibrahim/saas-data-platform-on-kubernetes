@@ -30,7 +30,12 @@ CLUSTER_NAME=$1
 BRANDING=${BRANDING-$DEFAULT_BRANDING}
 SYSTEM_NAMESPACE="${BRANDING}-system"
 WORKLOAD_NAMESPACE="${BRANDING}-workload"
+
 KUBEVELA_SYSTEM_NAMESPACE=vela-system
+KUBEVELA_SAAS_ADDON_NAME="saas"
+KUBEVELA_SAAS_ADDON_TYPE="git"
+KUBEVELA_SAAS_ADDON_ENDPOINT="https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes"
+KUBEVELA_SAAS_ADDON_PATH="addons/kubevela-addons"
 
 KUBEBUILDER_LOGGER_OPTS='{"development":false}'
 
@@ -234,6 +239,18 @@ ensure_kubevela() {
     vela addon enable fluxcd namespace=$SYSTEM_NAMESPACE
 }
 
+ensure_kubevela_addon_registry() {
+    log_info "Adding addon registry"
+    vela addon registry add ${KUBEVELA_SAAS_ADDON_NAME} \
+        --type ${KUBEVELA_SAAS_ADDON_TYPE} \
+        --endpoint=${KUBEVELA_SAAS_ADDON_ENDPOINT} \
+        --path=${KUBEVELA_SAAS_ADDON_PATH}
+
+    log_empty
+    log_info "Listing current addon registry:"
+    vela addon registry list
+}
+
 ensure_password_generator() {
     log_info "Creating ClusterGenerator db-password-generator..."
     cat <<EOF | kubectl apply -n ${WORKLOAD_NAMESPACE} -f -
@@ -337,6 +354,7 @@ bootstrap_external_secret_store $TENANT_ID $TENANT_KEYVAULT_TOKEN
 ensure_cloudnative_pg
 ensure_vela
 ensure_kubevela
+ensure_kubevela_addon_registry
 
 log_empty
 log_info "Tenant cluster bootstrap finished"
