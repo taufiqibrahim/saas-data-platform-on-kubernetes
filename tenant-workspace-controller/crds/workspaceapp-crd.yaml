@@ -48,6 +48,9 @@ spec:
                 lastReconcileTime:
                   type: string
                   format: date-time
+                lastReadyTime:
+                  type: string
+                  format: date-time
       additionalPrinterColumns:
         - name: Workspace
           type: string
