@@ -18,12 +18,13 @@ class Settings(BaseSettings):
 
     # KubeVela
     vela_system_namespace: str = "vela-system"
+    vela_addon_registry_name: str
 
     # Workspace
     workspace_id: str
     workspace_ca_path: str
     workspace_polling_url: str
-    
+
     # Workload
     workload_namespace: str = "saas-workload"
 

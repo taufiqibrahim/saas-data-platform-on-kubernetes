@@ -5,14 +5,16 @@ import kopf
 import logging
 import os
 import urllib3
-from kubernetes import config
+from kubernetes import client, config
 
 from settings import app_settings
 from workspace import delete_workspace_cr, fetch_workspace, get_workspace_cr
 from workspace_app import (
-    delete_workspace_app,
-    get_or_create_workspace_app,  # type: ignore
-    list_workspace_apps,
+    cleanup_workspace_app_resources,
+    delete_workspace_app_cr,
+    get_or_create_workspace_app_cr,
+    list_workspace_apps_cr,
+    reconcile_workspace_app,
 )
 
 urllib3.disable_warnings()
@@ -31,10 +33,10 @@ STANDARD_LABELS = {
 }
 
 WORKSPACE_LABEL_PREFIX = f"workspace.{app_settings.platform_group}"
-
+WORKSPACE_ID = app_settings.workspace_id
 # Custom workspace labels
 WORKSPACE_LABELS = {
-    f"{WORKSPACE_LABEL_PREFIX}/name": app_settings.workspace_id,  # Parent workspace
+    f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID,  # Parent workspace
     f"{WORKSPACE_LABEL_PREFIX}/managed": "true",  # Managed by controller
     f"{WORKSPACE_LABEL_PREFIX}/type": "<type>",  # Type of workspace app
 }
@@ -89,6 +91,7 @@ async def workspace_on_create(spec, name, namespace, patch, meta, logger, **_):
     patch.status["phase"] = "Ready"
     patch.status["lastReconcileTime"] = datetime.now(timezone.utc).isoformat()
 
+
 @kopf.timer(
     app_settings.platform_group,
     app_settings.platform_version,
@@ -110,24 +113,25 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
                 patch.status["phase"] = "ReconciliationError"
                 patch.status["error"] = "Failed to fetch workspace from control plane"
                 return
-            
+
             # Check existing workspace CR
             get_workspace_cr(
-                name=app_settings.workspace_id,
+                name=WORKSPACE_ID,
                 logger=logger,
                 namespace=app_settings.workload_namespace,
             )
 
             extWorkspaceId = workspace.extWorkspaceId
-            existing_apps = list_workspace_apps(
-                labels={f"{WORKSPACE_LABEL_PREFIX}/name": name}, logger=logger
+            existing_apps = list_workspace_apps_cr(
+                labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID}, logger=logger
             )
 
             # Handle workspace deletion - check for child apps first
             if workspace.status in ("DELETING"):
                 # Check if any apps still exist using labels
-                existing_apps = list_workspace_apps(
-                    labels={f"{WORKSPACE_LABEL_PREFIX}/name": name}, logger=logger
+                existing_apps = list_workspace_apps_cr(
+                    labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID},
+                    logger=logger,
                 )
 
                 if existing_apps:
@@ -147,7 +151,9 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
                 return
 
             # Handle workspace apps
-            desired_apps = [wa for wa in workspace.workspaceApps if wa.status not in ('DELETED')]
+            desired_apps = [
+                wa for wa in workspace.workspaceApps if wa.status not in ("DELETED")
+            ]
             app_names = [a.name for a in desired_apps]
             logger.info(f"Desired apps: {app_names}")
 
@@ -158,23 +164,24 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
 
                 # Handle workspace app deletion
                 if app.status in ("DELETING"):
-                    delete_workspace_app(
+                    delete_workspace_app_cr(
                         name=app_name,
                         logger=logger,
                         namespace=app_namespace,
                     )
                     continue
 
-                if app.status == 'DELETED':
+                if app.status == "DELETED":
+                    logger.warn(f"Workspace app: {app_name} still marked as DELETED")
                     continue
 
                 #     # Check if workspace app exists (or create it)
-                get_or_create_workspace_app(
+                get_or_create_workspace_app_cr(
                     name=app_name,
                     namespace=app_namespace,
                     # workspace_name=name,  # Parent workspace name
                     logger=logger,
-                    # version=getattr(app, 'version', 'latest'),
+                    version=getattr(app, "version", "latest"),
                     # config=getattr(app, 'config', {})
                 )
 
@@ -193,28 +200,28 @@ async def workspace_app_on_create(spec, name, namespace, patch, meta, logger, **
     patch.status["phase"] = "Creating"
     patch.metadata["finalizers"] = [FINALIZER]
 
-    # workspace_name = app_settings.workspace_id
-    # Get labels from metadata
-    # labels = meta.get("labels", {})
-    # workspace_name = labels.get(
-    #     f"{WORKSPACE_LABEL_PREFIX}/name", spec.get("workspace", "unknown")
-    # )
+    # Get existing labels (if any)
+    existing_labels = meta.get("labels", {})
 
-    logger.info(
-        f"Workspace app {name} for workspace {app_settings.workspace_id} created"
-    )
-    create_labels = {
-        f"{WORKSPACE_LABEL_PREFIX}/name": app_settings.workspace_id,  # Parent workspace
+    # Merge with new labels
+    patch.metadata["labels"] = {
+        **existing_labels,  # Keep existing labels
+        f"{WORKSPACE_LABEL_PREFIX}/name": spec.get("workspace", "unknown"),
+        f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID,  # Parent workspace
         f"{WORKSPACE_LABEL_PREFIX}/managed": "true",  # Managed by controller
         f"{WORKSPACE_LABEL_PREFIX}/type": name,  # Type of workspace app
+        "app.kubernetes.io/managed-by": "kopf",
     }
+
+    logger.info(f"Workspace app {name} for workspace {WORKSPACE_ID} created")
+
     try:
         await asyncio.to_thread(
             reconcile_workspace_app,
             spec,
             name,
             namespace,
-            create_labels,
+            # create_labels,
             logger,
         )
         patch.status["phase"] = "Ready"
@@ -234,37 +241,77 @@ def workspace_app_on_update(spec, name, namespace, patch, logger, **_):
     # TODO: labeling
     labels = {}
     try:
-        reconcile_workspace_app(spec, name, namespace, labels, logger)
+        reconcile_workspace_app(spec, name, namespace, logger)
         patch.status["phase"] = "Ready"
     except Exception as e:
         logger.error(f"Failed to reconcile: {e}")
         patch.status["phase"] = "Failed"
-        raise
 
 
-@kopf.on.delete(app_settings.platform_group, app_settings.platform_version, "workspaceapplications")  # type: ignore
-def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, **_):
+@kopf.on.delete(
+    app_settings.platform_group, 
+    app_settings.platform_version, 
+    "workspaceapplications",
+    retries=5,              # Number of retry attempts
+    backoff=1.5,            # Exponential backoff multiplier
+    timeout=3600             # Total timeout for all retries
+) # type: ignore
+def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, retry, **_):
     """Clean up child resources - BLOCKS deletion until complete"""
+
+    # if retry > 0:
+    #     logger.warning(f"Retry attempt {retry + 1}/5")
+
     logger.info(f"Deleting workspace app: {name}")
     patch.status["phase"] = "Deleting"
+    patch.status["retryCount"] = retry
 
-    try:
-        # TODO: Delete child resources here
-        # cleanup_workspace_app_child_resources(name, namespace, logger)
+    cleanup_workspace_app_resources(name=name, namespace=namespace, logger=logger)
 
-        # Remove finalizer to allow deletion
-        finalizers = list(meta.get("finalizers", []))
-        if FINALIZER in finalizers:
-            finalizers.remove(FINALIZER)
-            patch.metadata["finalizers"] = finalizers
-            logger.debug(f"Removed finalizer: {FINALIZER}")
+    # Remove finalizer
+    finalizers = list(meta.get("finalizers", []))
+    if FINALIZER in finalizers:
+        finalizers.remove(FINALIZER)
+        patch.metadata["finalizers"] = finalizers
 
-        logger.info(f"Successfully deleted workspace app: {name}")
-    except Exception as e:
-        logger.error(f"Failed to delete: {e}")
-        patch.status["phase"] = "DeletionFailed"
-        raise kopf.PermanentError(f"Deletion failed: {e}")
+    logger.info(f"Successfully deleted workspace app: {name}")
 
+    # try:
+    #     # Delete child resources here
+    #     cleanup_workspace_app_resources(name=name, namespace=namespace, logger=logger)
+
+    #     # Remove finalizer to allow deletion
+    #     finalizers = list(meta.get("finalizers", []))
+    #     if FINALIZER in finalizers:
+    #         finalizers.remove(FINALIZER)
+    #         patch.metadata["finalizers"] = finalizers
+    #         logger.debug(f"Removed finalizer: {FINALIZER}")
+
+    #     logger.info(f"Successfully deleted workspace app: {name}")
+    # except Exception as e:
+    #     logger.error(f"Failed to delete: {e}")
+    #     patch.status["phase"] = "DeletionFailed"
+    #     patch.status["error"] = str(e)
+    #     raise
+    #     # raise kopf.PermanentError(f"Deletion failed: {e}")
+
+
+# # Separate handler for when all retries are exhausted
+# @kopf.on.delete(
+#     app_settings.platform_group, 
+#     app_settings.platform_version, 
+#     "workspaceapplications",
+#     errors=kopf.ErrorsMode.PERMANENT
+# ) # type: ignore
+# def workspace_app_on_delete_error(spec, name, namespace, patch, logger, **_):
+#     """Called when deletion fails after all retries"""
+#     logger.error(f"Deletion permanently failed for: {name}")
+#     patch.status["phase"] = "DeletionFailed"
+#     # Optionally remove finalizer to prevent blocking deletion forever
+#     # finalizers = list(meta.get("finalizers", []))
+#     # if FINALIZER in finalizers:
+#     #     finalizers.remove(FINALIZER)
+#     #     patch.metadata["finalizers"] = finalizers
 
 # # Add timer for drift detection and periodic reconciliation
 # @kopf.timer(
@@ -281,7 +328,7 @@ def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, **_):
 #     try:
 #         # Check existing workspace CR
 #         get_workspace_cr(
-#             name=app_settings.workspace_id,
+#             name=WORKSPACE_ID,
 #             logger=logger,
 #             namespace=app_settings.workload_namespace,
 #         )
@@ -292,95 +339,3 @@ def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, **_):
 #         # reconcile_workspace_app(spec, name, namespace, {}, logger)
 #     except Exception as e:
 #         logger.error(f"Timer reconciliation failed: {e}")
-
-
-from kubernetes import client
-
-
-def reconcile_workspace_app(spec, name, namespace, labels, logger):
-    """
-    Reconcile workspace app with label propagation
-    """
-    logger.info(f"Reconciling workspace app: {name} in {namespace}")
-
-    # Prepare labels for child resources
-    child_labels = {
-        # Inherit from parent
-        **labels,
-        # Add child-specific labels
-        "app.kubernetes.io/part-of": name,
-    }
-
-    core_v1 = client.CoreV1Api()
-    apps_v1 = client.AppsV1Api()
-
-    # # Example: Create ConfigMap with labels
-    # configmap = client.V1ConfigMap(
-    #     metadata=client.V1ObjectMeta(
-    #         name=f"{name}-config",
-    #         namespace=namespace,
-    #         labels=child_labels,
-    #         owner_references=[
-    #             client.V1OwnerReference(
-    #                 api_version=f"{app_settings.platform_group}/{app_settings.platform_version}",
-    #                 kind="WorkspaceApplication",
-    #                 name=name,
-    #                 uid=spec.get("uid"),  # You'll need to pass this
-    #                 controller=True,
-    #                 block_owner_deletion=True
-    #             )
-    #         ]
-    #     ),
-    #     data=spec.get("config", {})
-    # )
-
-    # try:
-    #     core_v1.read_namespaced_config_map(f"{name}-config", namespace)
-    #     core_v1.patch_namespaced_config_map(f"{name}-config", namespace, configmap)
-    #     logger.info(f"Updated ConfigMap {name}-config")
-    # except client.exceptions.ApiException as e:
-    #     if e.status == 404:
-    #         core_v1.create_namespaced_config_map(namespace, configmap)
-    #         logger.info(f"Created ConfigMap {name}-config")
-    #     else:
-    #         raise
-
-    # # Example: Create Deployment with labels
-    # deployment = client.V1Deployment(
-    #     metadata=client.V1ObjectMeta(
-    #         name=f"{name}-deployment",
-    #         namespace=namespace,
-    #         labels=child_labels
-    #     ),
-    #     spec=client.V1DeploymentSpec(
-    #         replicas=spec.get("replicas", 1),
-    #         selector=client.V1LabelSelector(
-    #             match_labels={"app": name}
-    #         ),
-    #         template=client.V1PodTemplateSpec(
-    #             metadata=client.V1ObjectMeta(
-    #                 labels={**child_labels, "app": name}
-    #             ),
-    #             spec=client.V1PodSpec(
-    #                 containers=[
-    #                     client.V1Container(
-    #                         name=name,
-    #                         image=spec.get("image", "nginx:latest"),
-    #                         ports=[client.V1ContainerPort(container_port=8080)]
-    #                     )
-    #                 ]
-    #             )
-    #         )
-    #     )
-    # )
-
-    # try:
-    #     apps_v1.read_namespaced_deployment(f"{name}-deployment", namespace)
-    #     apps_v1.patch_namespaced_deployment(f"{name}-deployment", namespace, deployment)
-    #     logger.info(f"Updated Deployment {name}-deployment")
-    # except client.exceptions.ApiException as e:
-    #     if e.status == 404:
-    #         apps_v1.create_namespaced_deployment(namespace, deployment)
-    #         logger.info(f"Created Deployment {name}-deployment")
-    #     else:
-    #         raise

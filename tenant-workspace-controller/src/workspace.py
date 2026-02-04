@@ -16,11 +16,12 @@ def fetch_workspace(logger) -> Optional[WorkspacePollResponse]:
         response.raise_for_status()
         config = response.json()
         logger.debug(f"Fetched workspace config: {config}")
-        logger.info(f"Fetched workspace config")
+        logger.info(f"Workspace config fetched")
         return WorkspacePollResponse(**config)
     except requests.RequestException as e:
         logger.error(f"Failed to fetch workspace config: {e}")
         return None
+
 
 def get_workspace_cr(name, logger, namespace=None):
     api = client.CustomObjectsApi()
@@ -38,6 +39,7 @@ def get_workspace_cr(name, logger, namespace=None):
         logger.info(f"Workspace found: {name}")
     except ApiException as e:
         raise
+
 
 def delete_workspace_cr(name, logger):
     logger.info(f"Deleting Workspace {name}")
