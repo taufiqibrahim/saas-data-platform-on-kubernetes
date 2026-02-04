@@ -145,11 +145,9 @@ def delete_workspace_app_cr(name, logger, namespace=None):
         else:
             raise
 
+
 def cleanup_workspace_app_resources(
-    *,
-    name: str,
-    namespace: str,
-    logger: logging.Logger
+    *, name: str, namespace: str, logger: logging.Logger
 ) -> None:
     logger.info(f"Clean up workspace app: {name} in {namespace}")
 
@@ -163,9 +161,13 @@ def cleanup_workspace_app_resources(
     # Uninstall the addon
     if addon_exists:
         uninstall_vela_addon(
-            addon_name=addon_name,
+            addon_name=name,
             logger=logger,
         )
+    else:
+        logger.error(f"Workspace application addon not found: {name}")
+        raise
+
 
 def reconcile_workspace_app(spec, name, namespace, logger):
     """
@@ -178,18 +180,18 @@ def reconcile_workspace_app(spec, name, namespace, logger):
     addon_version = spec["version"]
     addon_identifier = get_addon_identifier(name=name)
     addon_exists = get_addon(addon_name, logger)
-    addon_status = (
-        addon_exists.get("status", {}).get("status") if addon_exists else None  # type: ignore
-    )
+    # addon_status = (
+    #     addon_exists.get("status", {}).get("status") if addon_exists else None  # type: ignore
+    # )
 
     # # Install the addon if not running
-    # if addon_status != "running" or addon_status is None:
-    install_vela_addon(
-        addon_identifier=addon_identifier,
-        addon_parameters={},
-        addon_version=addon_version,
-        logger=logger,
-    )
+    if addon_exists is None:
+        install_vela_addon(
+            addon_identifier=addon_identifier,
+            addon_parameters={},
+            addon_version=addon_version,
+            logger=logger,
+        )
 
     # Check if addon is running and healthy
 

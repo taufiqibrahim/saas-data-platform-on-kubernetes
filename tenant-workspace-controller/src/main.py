@@ -53,8 +53,6 @@ try:
 except:
     config.load_kube_config()
 
-FINALIZER = f"{app_settings.platform_group}/cleanup-finalizer"
-
 
 @kopf.on.startup()  # type: ignore
 async def startup_fn(logger, **kwargs):
@@ -198,7 +196,6 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
 async def workspace_app_on_create(spec, name, namespace, patch, meta, logger, **_):
     """Async handler for better concurrency"""
     patch.status["phase"] = "Creating"
-    patch.metadata["finalizers"] = [FINALIZER]
 
     # Get existing labels (if any)
     existing_labels = meta.get("labels", {})
@@ -221,10 +218,9 @@ async def workspace_app_on_create(spec, name, namespace, patch, meta, logger, **
             spec,
             name,
             namespace,
-            # create_labels,
             logger,
         )
-        patch.status["phase"] = "Ready"
+        patch.status["phase"] = "Reconciling"
         patch.status["lastReconcileTime"] = datetime.now(timezone.utc).isoformat()
     except Exception as e:
         logger.error(f"Failed to create: {e}")
@@ -233,29 +229,29 @@ async def workspace_app_on_create(spec, name, namespace, patch, meta, logger, **
         raise
 
 
-@kopf.on.update(app_settings.platform_group, app_settings.platform_version, "workspaceapplications")  # type: ignore
-def workspace_app_on_update(spec, name, namespace, patch, logger, **_):
-    """Reconcile on spec changes"""
-    patch.status["phase"] = "Reconciling"
+# @kopf.on.update(app_settings.platform_group, app_settings.platform_version, "workspaceapplications")  # type: ignore
+# def workspace_app_on_update(spec, name, namespace, patch, logger, **_):
+#     """Reconcile on spec changes"""
+#     patch.status["phase"] = "Reconciling"
 
-    # TODO: labeling
-    labels = {}
-    try:
-        reconcile_workspace_app(spec, name, namespace, logger)
-        patch.status["phase"] = "Ready"
-    except Exception as e:
-        logger.error(f"Failed to reconcile: {e}")
-        patch.status["phase"] = "Failed"
+#     # TODO: labeling
+#     labels = {}
+#     try:
+#         reconcile_workspace_app(spec, name, namespace, logger)
+#         patch.status["phase"] = "Ready"
+#     except Exception as e:
+#         logger.error(f"Failed to reconcile: {e}")
+#         patch.status["phase"] = "Failed"
 
 
 @kopf.on.delete(
-    app_settings.platform_group, 
-    app_settings.platform_version, 
+    app_settings.platform_group,
+    app_settings.platform_version,
     "workspaceapplications",
-    retries=5,              # Number of retry attempts
-    backoff=1.5,            # Exponential backoff multiplier
-    timeout=3600             # Total timeout for all retries
-) # type: ignore
+    retries=5,  # Number of retry attempts
+    backoff=1.5,  # Exponential backoff multiplier
+    timeout=3600,  # Total timeout for all retries
+)  # type: ignore
 def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, retry, **_):
     """Clean up child resources - BLOCKS deletion until complete"""
 
@@ -268,24 +264,11 @@ def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, retry, *
 
     cleanup_workspace_app_resources(name=name, namespace=namespace, logger=logger)
 
-    # Remove finalizer
-    finalizers = list(meta.get("finalizers", []))
-    if FINALIZER in finalizers:
-        finalizers.remove(FINALIZER)
-        patch.metadata["finalizers"] = finalizers
-
     logger.info(f"Successfully deleted workspace app: {name}")
 
     # try:
     #     # Delete child resources here
     #     cleanup_workspace_app_resources(name=name, namespace=namespace, logger=logger)
-
-    #     # Remove finalizer to allow deletion
-    #     finalizers = list(meta.get("finalizers", []))
-    #     if FINALIZER in finalizers:
-    #         finalizers.remove(FINALIZER)
-    #         patch.metadata["finalizers"] = finalizers
-    #         logger.debug(f"Removed finalizer: {FINALIZER}")
 
     #     logger.info(f"Successfully deleted workspace app: {name}")
     # except Exception as e:
@@ -298,8 +281,8 @@ def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, retry, *
 
 # # Separate handler for when all retries are exhausted
 # @kopf.on.delete(
-#     app_settings.platform_group, 
-#     app_settings.platform_version, 
+#     app_settings.platform_group,
+#     app_settings.platform_version,
 #     "workspaceapplications",
 #     errors=kopf.ErrorsMode.PERMANENT
 # ) # type: ignore
@@ -307,11 +290,6 @@ def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, retry, *
 #     """Called when deletion fails after all retries"""
 #     logger.error(f"Deletion permanently failed for: {name}")
 #     patch.status["phase"] = "DeletionFailed"
-#     # Optionally remove finalizer to prevent blocking deletion forever
-#     # finalizers = list(meta.get("finalizers", []))
-#     # if FINALIZER in finalizers:
-#     #     finalizers.remove(FINALIZER)
-#     #     patch.metadata["finalizers"] = finalizers
 
 # # Add timer for drift detection and periodic reconciliation
 # @kopf.timer(

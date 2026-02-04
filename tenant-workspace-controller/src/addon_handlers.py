@@ -78,7 +78,7 @@ def install_vela_addon(addon_identifier, addon_version, addon_parameters, logger
     logger.info(f"Installing addon: {addon_identifier}")
 
     addon_render_output = run_vela_addon(
-        ["enable", addon_identifier, "--version", addon_version, "--dry-run"],
+        ["enable", addon_identifier, "--dry-run"],
         logger,
         capture_output=True,
     )

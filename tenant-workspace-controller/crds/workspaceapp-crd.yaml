@@ -38,9 +38,8 @@ spec:
                 phase:
                   type: string
                   enum:
-                    - Creating
-                    - Ready
                     - Reconciling
+                    - Ready
                     - Failed
                     - Deleting
                     - DeletionFailed
