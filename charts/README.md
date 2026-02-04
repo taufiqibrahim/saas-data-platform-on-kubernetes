@@ -35,3 +35,11 @@ This example pushes version `1.2.3` of a `my-app` helm chart to a zot-chart repo
 ```bash
 helm push my-app-1.2.3.tgz oci://zot.saas.internal/my-app
 ```
+
+
+## 4. Pull a vendored chart
+
+This is an example to pull a Jupyterhub chart with version 4.3.0 and put the extracted into `jupyterhub` directory.
+```bash
+helm pull jupyterhub/jupyterhub --version 4.3.0 --untar -d jupyterhub
+```
