@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     workspace_id: str
     workspace_ca_path: str
     workspace_polling_url: str
-    workspace_namespace: str = "saas-workspace"
+    
+    # Workload
+    workload_namespace: str = "saas-workload"
 
     # Status
     # workspace_app_created_status: str = "PROVISIONING"

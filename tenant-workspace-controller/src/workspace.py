@@ -24,14 +24,14 @@ def fetch_workspace(logger) -> Optional[WorkspacePollResponse]:
 
 def get_workspace_cr(name, logger, namespace=None):
     api = client.CustomObjectsApi()
-    _namespace = app_settings.workspace_namespace
+    _namespace = app_settings.workload_namespace
     if namespace is not None and namespace != "":
         _namespace = namespace
     try:
         api.get_namespaced_custom_object(
             group=app_settings.platform_group,
             version=app_settings.platform_version,
-            namespace=app_settings.workspace_namespace,
+            namespace=app_settings.workload_namespace,
             plural="workspaces",
             name=name,
         )
@@ -47,7 +47,7 @@ def delete_workspace_cr(name, logger):
         api.delete_namespaced_custom_object(
             group=app_settings.platform_group,
             version=app_settings.platform_version,
-            namespace=app_settings.workspace_namespace,
+            namespace=app_settings.workload_namespace,
             plural="workspaces",
             name=name,
         )

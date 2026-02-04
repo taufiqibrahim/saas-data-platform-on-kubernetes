@@ -246,7 +246,7 @@ def count_workspace_apps_for_workspace(
 
 def get_or_create_workspace_app(name, logger, namespace=None):
     api = client.CustomObjectsApi()
-    _namespace = app_settings.workspace_namespace
+    _namespace = app_settings.workload_namespace
     if namespace is not None and namespace != "":
         _namespace = namespace
     try:
@@ -289,7 +289,7 @@ def get_or_create_workspace_app(name, logger, namespace=None):
 
 def delete_workspace_app(name, logger, namespace=None):
     api = client.CustomObjectsApi()
-    _namespace = app_settings.workspace_namespace
+    _namespace = app_settings.workload_namespace
     if namespace is not None and namespace != "":
         _namespace = namespace
     try:
@@ -303,7 +303,7 @@ def delete_workspace_app(name, logger, namespace=None):
         logger.info(f"Workspace application deleted: {name}")
     except ApiException as e:
         if e.status == 404:
-            logger.info(f"Workspace application not found: {name}")
+            logger.error(f"Workspace application not found: {name}")
             return
         else:
             raise
@@ -335,7 +335,7 @@ def handle_workspace_app_addon(app: WorkspaceAppPollResponse, logger: logging.Lo
 #     if phase == "Ready":
 #         return
 
-#     # logger.info(f"Phase: {phase}, syncing {name} in {app_settings.workspace_namespace}")
+#     # logger.info(f"Phase: {phase}, syncing {name} in {app_settings.workload_namespace}")
 
 #     # 2. Check if Addon exist
 #     addon_exists = get_addon(addon_name, logger)

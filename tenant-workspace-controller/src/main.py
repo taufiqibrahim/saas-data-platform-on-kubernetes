@@ -102,6 +102,7 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
     """
     async with LOCK:
         try:
+            print()
             # Poll workspace to control plane API
             workspace = fetch_workspace(logger=logger)
             if not workspace:
@@ -114,7 +115,7 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
             get_workspace_cr(
                 name=app_settings.workspace_id,
                 logger=logger,
-                namespace=app_settings.workspace_namespace,
+                namespace=app_settings.workload_namespace,
             )
 
             extWorkspaceId = workspace.extWorkspaceId
@@ -146,9 +147,9 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
                 return
 
             # Handle workspace apps
-            desired_apps = workspace.workspaceApps
+            desired_apps = [wa for wa in workspace.workspaceApps if wa.status not in ('DELETED')]
             app_names = [a.name for a in desired_apps]
-            logger.info(f"Configured apps: {app_names}")
+            logger.info(f"Desired apps: {app_names}")
 
             for app in desired_apps:
                 app_name = app.name
@@ -162,6 +163,9 @@ async def reconcile_workspace(name, namespace, spec, status, patch, logger, **kw
                         logger=logger,
                         namespace=app_namespace,
                     )
+                    continue
+
+                if app.status == 'DELETED':
                     continue
 
                 #     # Check if workspace app exists (or create it)
@@ -279,7 +283,7 @@ def workspace_app_on_delete(spec, name, namespace, patch, meta, logger, **_):
 #         get_workspace_cr(
 #             name=app_settings.workspace_id,
 #             logger=logger,
-#             namespace=app_settings.workspace_namespace,
+#             namespace=app_settings.workload_namespace,
 #         )
 
 #         # if status.get("phase") not in ["Ready", "Failed"]:
