@@ -28,6 +28,9 @@ nav:
           - getting-started/01-making-domains-work/02-bootstraping-ca.md
           - getting-started/01-making-domains-work/03-setup-dns.md
 
+  - Development:
+      - development/decisions.md
+      - development/kubevela-addon.md
 
 theme:
   name: material

@@ -14,25 +14,7 @@
       "config": [],
       "parameter": {
         "enabled": true
-      },
-      "secrets": [
-        {
-          "uid": "uid",
-          "type": "database",
-          "generator": true
-        },
-        {
-          "uid": "uid",
-          "type": "git-ssh",
-          "generator": false,
-          "value": ""
-        },
-        {
-          "uid": "uid",
-          "type": "helm-values",
-          "value": ""
-        }
-      ]
+      }
     }
   ],
   "storage": {},

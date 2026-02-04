@@ -32,6 +32,11 @@ SYSTEM_NAMESPACE="${BRANDING}-system"
 WORKLOAD_NAMESPACE="${BRANDING}-workload"
 
 KUBEVELA_SYSTEM_NAMESPACE=vela-system
+
+KUBEVELA_STATIC_ADDON_NAME="static"
+KUBEVELA_STATIC_ADDON_TYPE="helm"
+KUBEVELA_STATIC_ADDON_ENDPOINT="https://saas.internal/kubevela-addons/"
+
 KUBEVELA_SAAS_ADDON_NAME="saas"
 KUBEVELA_SAAS_ADDON_TYPE="git"
 KUBEVELA_SAAS_ADDON_ENDPOINT="https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes"
@@ -245,6 +250,10 @@ ensure_kubevela_addon_registry() {
         --type ${KUBEVELA_SAAS_ADDON_TYPE} \
         --endpoint=${KUBEVELA_SAAS_ADDON_ENDPOINT} \
         --path=${KUBEVELA_SAAS_ADDON_PATH}
+
+    vela addon registry add ${KUBEVELA_STATIC_ADDON_NAME} \
+        --type=${KUBEVELA_STATIC_ADDON_TYPE} \
+        --endpoint=${KUBEVELA_STATIC_ADDON_ENDPOINT}
 
     log_empty
     log_info "Listing current addon registry:"

@@ -1,0 +1,18 @@
+apiVersion: v1
+entries:
+  jupyterhub:
+  - annotations:
+      addon.name: jupyterhub
+    apiVersion: v2
+    appVersion: 0.0.1
+    created: "2026-02-04T23:18:37.940629032+07:00"
+    description: SaaS Jupyterhub workspace app addon.
+    digest: 9068a448700ff64c2a9f7d3325b40a433282ab87394c688369d05a240f1010fe
+    keywords:
+    - workspaceapps
+    name: jupyterhub
+    type: library
+    urls:
+    - https://saas.internal/kubevela-addons/jupyterhub-0.0.1.tgz
+    version: 0.0.1
+generated: "2026-02-04T23:18:37.939310614+07:00"
