@@ -419,7 +419,11 @@ model Workspace {
   account   Account @relation("AccountToWorkspace", fields: [accountId], references: [id], onDelete: Restrict)
   accountId BigInt
 
-  bootstrapTokens WorkspaceBootstrapToken[] @relation("WorkspaceToBootstrapTokens")
+  clusterAgent   WorkspaceClusterAgent?  @relation("CurrentWorkspaceClusterAgent", fields: [clusterAgentId], references: [id], onDelete: Cascade)
+  clusterAgentId BigInt?                 @unique // MUST be unique for 1-1
+  clusterAgents  WorkspaceClusterAgent[] @relation("WorkspaceToClusterAgents")
+
+  // bootstrapTokens WorkspaceBootstrapToken[] @relation("WorkspaceToBootstrapTokens")
 
   // cloudRegion   CloudRegion @relation("WorkspaceToCloudRegion", fields: [cloudRegionId], references: [id])
   // cloudRegionId Int
@@ -455,19 +459,61 @@ model Workspace {
   @@map("workspaces")
 }
 
-model WorkspaceBootstrapToken {
+enum WorkspaceClusterAgentStatus {
+  PendingRegistration
+  Active
+  Suspended
+  Deleted
+}
+
+model WorkspaceClusterAgent {
   id  BigInt @id @default(autoincrement())
   uid String @unique @default(uuid())
 
-  workspace   Workspace @relation("WorkspaceToBootstrapTokens", fields: [workspaceId], references: [id])
-  workspaceId BigInt
+  workspace           Workspace  @relation("WorkspaceToClusterAgents", fields: [workspaceId], references: [id])
+  workspaceId         BigInt
+  currentForWorkspace Workspace? @relation("CurrentWorkspaceClusterAgent")
+
+  bootstrapToken   WorkspaceClusterAgentBootstrapToken?  @relation("CurrentWorkspaceClusterAgentBootstrapToken", fields: [bootstrapTokenId], references: [id])
+  bootstrapTokenId BigInt?                               @unique
+  bootstrapTokens  WorkspaceClusterAgentBootstrapToken[] @relation("WorkspaceClusterAgentToBootstrapTokens")
+
+  status WorkspaceClusterAgentStatus @default(PendingRegistration)
+
+  lastPingAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("workspace_cluster_agents")
+}
+
+model WorkspaceClusterAgentBootstrapToken {
+  id  BigInt @id @default(autoincrement())
+  uid String @unique @default(uuid())
+
+  workspaceClusterAgent           WorkspaceClusterAgent  @relation("WorkspaceClusterAgentToBootstrapTokens", fields: [workspaceClusterAgentId], references: [id])
+  workspaceClusterAgentId         BigInt
+  currentForWorkspaceClusterAgent WorkspaceClusterAgent? @relation("CurrentWorkspaceClusterAgentBootstrapToken")
 
   token     String
   createdAt DateTime @default(now())
   expiredAt DateTime
 
-  @@map("workspace_bootstrap_tokens")
+  @@map("workspace_cluster_agent_bootstrap_tokens")
 }
+
+// model WorkspaceBootstrapToken {
+//   id  BigInt @id @default(autoincrement())
+//   uid String @unique @default(uuid())
+
+//   workspace   Workspace @relation("WorkspaceToBootstrapTokens", fields: [workspaceId], references: [id])
+//   workspaceId BigInt
+
+//   token     String
+//   createdAt DateTime @default(now())
+//   expiredAt DateTime
+
+//   @@map("workspace_bootstrap_tokens")
+// }
 
 // model WorkspaceProvisioningConfig {
 //   id  BigInt @id @default(autoincrement())

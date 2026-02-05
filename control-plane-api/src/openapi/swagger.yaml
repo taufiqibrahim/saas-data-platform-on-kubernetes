@@ -134,22 +134,6 @@ components:
         - extAccountId
       type: object
       additionalProperties: false
-    BootstrapWorkspaceClusterResponse:
-      properties:
-        token:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        expiredAt:
-          type: string
-          format: date-time
-      required:
-        - token
-        - createdAt
-        - expiredAt
-      type: object
-      additionalProperties: false
     PlatformProviderRegionResponse:
       properties:
         uid:
@@ -256,6 +240,62 @@ components:
         - uptime
         - timestamp
         - services
+      type: object
+      additionalProperties: false
+    AgentMTLSCredentials:
+      description: mTLS credentials for agent communication
+      properties:
+        caCert:
+          type: string
+          description: CA certificate in PEM format
+        clientCert:
+          type: string
+          description: Client certificate in PEM format
+        clientKey:
+          type: string
+          description: Client private key in PEM format
+        expiresAt:
+          type: string
+          format: date-time
+          description: Certificate expiration date
+      required:
+        - caCert
+        - clientCert
+        - clientKey
+        - expiresAt
+      type: object
+      additionalProperties: false
+    AgentRegisterResponse:
+      description: Response for successful agent registration
+      properties:
+        agentUid:
+          type: string
+          description: Agent unique ID
+        workspaceUid:
+          type: string
+          description: Workspace unique ID
+        extWorkspaceId:
+          type: string
+          description: External workspace ID
+        mtls:
+          $ref: "#/components/schemas/AgentMTLSCredentials"
+          description: mTLS credentials for secure communication
+      required:
+        - agentUid
+        - workspaceUid
+        - extWorkspaceId
+        - mtls
+      type: object
+      additionalProperties: false
+    AgentRegisterRequest:
+      description: Request body for agent registration
+      properties:
+        token:
+          type: string
+          description: Bootstrap token for agent registration
+          example: abc123xyz...
+      required:
+        - token
       type: object
       additionalProperties: false
     PrincipalResponse:
@@ -587,37 +627,6 @@ paths:
           required: true
           schema:
             type: string
-  /workspaces/{workspaceUid}/bootstrapCluster:
-    post:
-      operationId: CreateBootstrapToken
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BootstrapWorkspaceClusterResponse"
-        "400":
-          description: Validation Failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ValidateErrorJSON"
-      description: Bootstrap new workspace cluster
-      summary: Bootstrap new workspace cluster
-      tags:
-        - Workspaces
-      security:
-        - bearerAuth: []
-        - oauth2PasswordSSO: []
-        - pkceSSO:
-            - openid
-      parameters:
-        - in: path
-          name: workspaceUid
-          required: true
-          schema:
-            type: string
   /admin/accounts:
     get:
       operationId: ListAccounts
@@ -761,6 +770,89 @@ paths:
           schema:
             format: double
             type: number
+  /agent/register:
+    post:
+      operationId: RegisterAgent
+      responses:
+        "200":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRegisterResponse"
+        "400":
+          description: Validation Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateErrorJSON"
+        "401":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+        "403":
+          description: Agent is suspended
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+        "409":
+          description: Agent already registered
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+        "410":
+          description: Agent has been deleted
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+      description: >-
+        Register a workspace cluster agent using a bootstrap token.
+
+        This endpoint is unauthenticated - the bootstrap token serves as the
+        credential.
+
+        Upon successful registration, the agent receives mTLS certificates for
+        secure communication.
+      summary: Register agent
+      tags:
+        - Agent
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRegisterRequest"
   /health:
     get:
       operationId: GetHealthCheck
@@ -887,4 +979,4 @@ paths:
             format: double
             type: number
 servers:
-  - url: http://localhost:5001/api/v1
+  - url: http://localhost:5002/api/v1

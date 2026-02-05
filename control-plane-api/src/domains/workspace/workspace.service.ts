@@ -13,11 +13,13 @@ import logger from '@/config/logger';
 import { offsetPagination } from '@/utils/api';
 
 import { workspaceSelect } from './workspace.select';
-import { BootstrapWorkspaceClusterParams, BootstrapWorkspaceClusterResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceFilters, WorkspaceResponse } from './workspace.type';
+import { AgentMTLSCredentials, AgentRegisterRequest, AgentRegisterResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceFilters, WorkspaceResponse } from './workspace.type';
 import { checkPermission } from '@/middlewares/authorization.middleware';
 import { generateWorkspaceId } from '@/utils/idGenerator';
 import { createdByPrincipalSelect } from '../principal/principal.select';
 import { HttpError } from '@/types/errors';
+import { randomBytes } from 'crypto';
+import forge from 'node-forge';
 // import { generateWorkspaceId } from '@/utils/idGenerator';
 // import { deepMergeObject, isNonEmptyObject } from '@/utils/json.utils'
 
@@ -290,9 +292,39 @@ export async function provisionWorkspace({
     //     throw new HttpError(404, 'Workspace not found');
     //   }
 
-    // Recheck and guard on created account
-    const workspaceCreated = await tx.workspace.findUnique({
+    // Create workspace cluster agent record
+    const workspaceClusterAgent = await tx.workspaceClusterAgent.create({
+      data: {
+        workspaceId: workspace.id,
+      }
+    })
+
+    // Generate a secure random token
+    const token = randomBytes(32).toString('base64url'); // 43 characters, URL-safe
+
+    // Set expiration (e.g., 24 hours from now)
+    const expiredAt = new Date();
+    expiredAt.setHours(expiredAt.getHours() + 24);
+
+    // Create workspace cluster agent token
+    const workspaceClusterAgentBootstrapToken = await tx.workspaceClusterAgentBootstrapToken.create({
+      data: {
+        workspaceClusterAgentId: workspaceClusterAgent.id,
+        token,
+        expiredAt
+      }
+    });
+
+    // Update workspace cluster agent
+    await tx.workspaceClusterAgent.update({
+      where: { id: workspaceClusterAgent.id },
+      data: { bootstrapTokenId: workspaceClusterAgentBootstrapToken.id }
+    });
+
+    // Update workspace and guard on created workspace
+    const workspaceCreated = await tx.workspace.update({
       where: { id: workspace.id },
+      data: { clusterAgentId: workspaceClusterAgent.id },
       select: workspaceSelect,
     });
 
@@ -522,26 +554,6 @@ export async function getWorkspace({
   }
 
   return workspaceExists;
-}
-
-export async function bootstrapWorkspaceCluster({
-  principal,
-  workspaceUid
-}: BootstrapWorkspaceClusterParams): Promise<BootstrapWorkspaceClusterResponse> {
-  const workspace = await getWorkspaceInternal({ principal, workspaceUid })
-  return await prisma.workspaceBootstrapToken.create({
-    data: {
-      workspaceId: workspace.id,
-      token: 'my-token',
-      expiredAt: new Date()
-    },
-    select: {
-      uid: true,
-      token: true,
-      createdAt: true,
-      expiredAt: true,
-    }
-  })
 }
 
 // async function generateWorkspaceProvisionConfig(workspace: WorkspaceProvisionConfigInput): Promise<WorkspaceProvisionConfig> {
@@ -1013,3 +1025,128 @@ export async function bootstrapWorkspaceCluster({
 //   // Add app client roles
 //   await KeycloakAdminService.syncClientRolesToRealmRoles(kc, realmDef.realmName, realmDef.roles, extWorkspaceId)
 // }
+
+/******************************************************************************
+ * Generate mTLS certificates for agent
+ *****************************************************************************/
+function generateMTLSCertificates(agentUid: string, workspaceUid: string): AgentMTLSCredentials {
+  // Certificate validity: 1 year
+  const validityDays = 365;
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + validityDays);
+
+  // Generate CA key pair
+  const caKeys = forge.pki.rsa.generateKeyPair(2048);
+  const caCert = forge.pki.createCertificate();
+  caCert.publicKey = caKeys.publicKey;
+  caCert.serialNumber = '01';
+  caCert.validity.notBefore = new Date();
+  caCert.validity.notAfter = expiresAt;
+
+  const caAttrs = [
+    { name: 'commonName', value: `Workspace ${workspaceUid} CA` },
+    { name: 'organizationName', value: 'SaaS Data Platform' },
+  ];
+  caCert.setSubject(caAttrs);
+  caCert.setIssuer(caAttrs);
+  caCert.setExtensions([
+    { name: 'basicConstraints', cA: true },
+    { name: 'keyUsage', keyCertSign: true, digitalSignature: true },
+  ]);
+  caCert.sign(caKeys.privateKey, forge.md.sha256.create());
+
+  // Generate client key pair
+  const clientKeys = forge.pki.rsa.generateKeyPair(2048);
+  const clientCert = forge.pki.createCertificate();
+  clientCert.publicKey = clientKeys.publicKey;
+  clientCert.serialNumber = '02';
+  clientCert.validity.notBefore = new Date();
+  clientCert.validity.notAfter = expiresAt;
+
+  const clientAttrs = [
+    { name: 'commonName', value: `agent-${agentUid}` },
+    { name: 'organizationName', value: 'SaaS Data Platform' },
+  ];
+  clientCert.setSubject(clientAttrs);
+  clientCert.setIssuer(caAttrs); // Signed by CA
+  clientCert.setExtensions([
+    { name: 'basicConstraints', cA: false },
+    { name: 'keyUsage', digitalSignature: true, keyEncipherment: true },
+    { name: 'extKeyUsage', clientAuth: true },
+  ]);
+  clientCert.sign(caKeys.privateKey, forge.md.sha256.create());
+
+  return {
+    caCert: forge.pki.certificateToPem(caCert),
+    clientCert: forge.pki.certificateToPem(clientCert),
+    clientKey: forge.pki.privateKeyToPem(clientKeys.privateKey),
+    expiresAt,
+  };
+}
+
+/******************************************************************************
+ * Register workspace cluster agent
+ *****************************************************************************/
+export async function registerWorkspaceClusterAgent({
+  token,
+}: AgentRegisterRequest): Promise<AgentRegisterResponse> {
+  // Find the bootstrap token
+  const bootstrapToken = await prisma.workspaceClusterAgentBootstrapToken.findFirst({
+    where: {
+      token,
+    },
+    include: {
+      workspaceClusterAgent: {
+        include: {
+          workspace: true,
+        },
+      },
+    },
+  });
+
+  if (!bootstrapToken) {
+    throw new HttpError(401, 'Invalid registration token');
+  }
+
+  // Check if token is expired
+  if (new Date() > bootstrapToken.expiredAt) {
+    throw new HttpError(401, 'Registration token has expired');
+  }
+
+  const agent = bootstrapToken.workspaceClusterAgent;
+  const workspace = agent.workspace;
+
+  // Check if agent is already registered
+  if (agent.status === 'Active') {
+    throw new HttpError(409, 'Agent is already registered');
+  }
+
+  if (agent.status === 'Deleted') {
+    throw new HttpError(410, 'Agent has been deleted');
+  }
+
+  if (agent.status === 'Suspended') {
+    throw new HttpError(403, 'Agent is suspended');
+  }
+
+  // Generate mTLS certificates
+  const mtls = generateMTLSCertificates(agent.uid, workspace.uid);
+
+  // Update agent status to Active and set lastPingAt
+  await prisma.workspaceClusterAgent.update({
+    where: { id: agent.id },
+    data: {
+      status: 'Active',
+      lastPingAt: new Date(),
+    },
+  });
+
+  logger.info({ agentUid: agent.uid, workspaceUid: workspace.uid }, 'Agent registered successfully');
+
+  return {
+    agentUid: agent.uid,
+    workspaceUid: workspace.uid,
+    extWorkspaceId: workspace.extWorkspaceId,
+    mtls,
+  };
+}

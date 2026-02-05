@@ -1,6 +1,6 @@
 import { RecordField, Show } from "@/components/admin";
 import { CopyCell } from "@/components/custom/copy-cell";
-import { BootstrapClusterButton } from "@/components/custom/workspace/bootstrap-cluster-button";
+import { AgentBootstrapCommand } from "@/components/custom/workspace/agent-bootstrap-command";
 
 export const WorkspaceShow = () => (
   <Show title="Workspace">
@@ -21,13 +21,14 @@ export const WorkspaceShow = () => (
 
       <RecordField source="status" label="Status" />
 
+      <RecordField source="account.platformProvider.displayName" label="Platform" />
+
       <RecordField source="createdAt" label="Created at" />
       <RecordField source="createdBy.email" label="Created by" />
 
       <RecordField source="updatedAt" label="Last updated at" />
 
-      <BootstrapClusterButton />
-
+      <AgentBootstrapCommand />
     </div>
   </Show>
 )

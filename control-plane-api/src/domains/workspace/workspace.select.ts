@@ -9,6 +9,31 @@ export const workspaceSelect = Prisma.validator<Prisma.WorkspaceSelect>()({
   name: true,
   status: true,
   description: true,
+  account: {
+    select: {
+      uid: true,
+      extAccountId: true,
+      platformProvider: {
+        select: {
+          name: true,
+          displayName: true,
+        },
+      },
+    },
+  },
+  clusterAgent: {
+    select: {
+      uid: true,
+      status: true,
+      lastPingAt: true,
+      bootstrapToken: {
+        select: {
+          token: true,
+          expiredAt: true,
+        },
+      },
+    },
+  },
   // credential: {
   //   select: {
   //     uid: true,

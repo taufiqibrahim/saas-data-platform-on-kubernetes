@@ -18,7 +18,7 @@ import {
 import { authenticationMiddleware } from '@/middlewares/authentication.middleware';
 
 import * as WorkspaceService from './workspace.service';
-import { BootstrapWorkspaceClusterResponse, CreateWorkspaceRequestBody, ListWorkspacesResponse, WorkspaceResponse } from './workspace.type';
+import { CreateWorkspaceRequestBody, ListWorkspacesResponse, WorkspaceResponse } from './workspace.type';
 import { ValidateErrorJSON } from '../_shared/shared.type';
 
 // import { PartialWorkspacePatchInput, Workspace, WorkspaceCreateInput, WorkspaceList, WorkspaceProvisioningConfig, WorkspaceProvisioningConfigList, WorkspaceProvisionConfigResponse } from './workspace.type';
@@ -101,22 +101,22 @@ export class WorkspaceController extends Controller {
     });
   }
 
-  /**
-   * Bootstrap new workspace cluster
-   * @summary Bootstrap new workspace cluster
-   */
-  @Post('/{workspaceUid}/bootstrapCluster')
-  @SuccessResponse('200')
-  @Response<ValidateErrorJSON>(400, 'Validation Failed')
-  public async createBootstrapToken(
-    @Request() req: express.Request,
-    @Path() workspaceUid: string
-  ): Promise<BootstrapWorkspaceClusterResponse> {
-    return await WorkspaceService.bootstrapWorkspaceCluster({
-      principal: req.principal,
-      workspaceUid,
-    });
-  }
+  // /**
+  //  * Bootstrap new workspace cluster
+  //  * @summary Bootstrap new workspace cluster
+  //  */
+  // @Post('/{workspaceUid}/bootstrapCluster')
+  // @SuccessResponse('200')
+  // @Response<ValidateErrorJSON>(400, 'Validation Failed')
+  // public async createBootstrapToken(
+  //   @Request() req: express.Request,
+  //   @Path() workspaceUid: string
+  // ): Promise<BootstrapWorkspaceClusterResponse> {
+  //   return await WorkspaceService.bootstrapWorkspaceCluster({
+  //     principal: req.principal,
+  //     workspaceUid,
+  //   });
+  // }
 
   // /**
   //  * Create new workspace provision config

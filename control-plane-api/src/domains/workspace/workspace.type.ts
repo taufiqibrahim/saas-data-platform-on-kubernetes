@@ -113,21 +113,6 @@ export interface ProvisionWorkspaceData {
   data: CreateWorkspaceRequestBody;
 }
 
-export interface BootstrapWorkspaceClusterParams {
-  principal: PrincipalAuthInfo;
-  /**
-   * Workspace unique ID
-   * @example "83ef9fc3-159c-43fc-a31f-0d4575dc373c"
-   */
-  workspaceUid: string;
-}
-
-export interface BootstrapWorkspaceClusterResponse {
-  token: string;
-  createdAt: Date;
-  expiredAt: Date;
-}
-
 // export type Role = {
 //   name: string;
 //   description: string;
@@ -268,3 +253,62 @@ export interface BootstrapWorkspaceClusterResponse {
 //   // tofuBackendConfig: TofuBackendConfig;
 //   tofuTfvars: IRecordOfAny;
 // }
+
+/******************************************************************************
+ * Agent Registration Types
+ *****************************************************************************/
+
+/**
+ * Request body for agent registration
+ */
+export interface AgentRegisterRequest {
+  /**
+   * Bootstrap token for agent registration
+   * @example "abc123xyz..."
+   */
+  token: string;
+}
+
+/**
+ * mTLS credentials for agent communication
+ */
+export interface AgentMTLSCredentials {
+  /**
+   * CA certificate in PEM format
+   */
+  caCert: string;
+  /**
+   * Client certificate in PEM format
+   */
+  clientCert: string;
+  /**
+   * Client private key in PEM format
+   */
+  clientKey: string;
+  /**
+   * Certificate expiration date
+   */
+  expiresAt: Date;
+}
+
+/**
+ * Response for successful agent registration
+ */
+export interface AgentRegisterResponse {
+  /**
+   * Agent unique ID
+   */
+  agentUid: string;
+  /**
+   * Workspace unique ID
+   */
+  workspaceUid: string;
+  /**
+   * External workspace ID
+   */
+  extWorkspaceId: string;
+  /**
+   * mTLS credentials for secure communication
+   */
+  mtls: AgentMTLSCredentials;
+}
