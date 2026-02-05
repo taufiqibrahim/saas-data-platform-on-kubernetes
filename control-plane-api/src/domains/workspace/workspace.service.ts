@@ -13,13 +13,13 @@ import logger from '@/config/logger';
 import { offsetPagination } from '@/utils/api';
 
 import { workspaceSelect } from './workspace.select';
-import { AgentMTLSCredentials, AgentRegisterRequest, AgentRegisterResponse, GenerateBootstrapTokenParams, GenerateBootstrapTokenResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceFilters, WorkspaceResponse } from './workspace.type';
+import { AgentRegisterRequest, AgentRegisterResponse, GenerateBootstrapTokenParams, GenerateBootstrapTokenResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceResponse } from './workspace.type';
 import { checkPermission } from '@/middlewares/authorization.middleware';
 import { generateWorkspaceId } from '@/utils/idGenerator';
 import { createdByPrincipalSelect } from '../principal/principal.select';
 import { HttpError } from '@/types/errors';
 import { randomBytes } from 'crypto';
-import forge from 'node-forge';
+import { CertService } from '../certificate/cert.service';
 // import { generateWorkspaceId } from '@/utils/idGenerator';
 // import { deepMergeObject, isNonEmptyObject } from '@/utils/json.utils'
 
@@ -1120,64 +1120,6 @@ export async function generateBootstrapToken({
 }
 
 /******************************************************************************
- * Generate mTLS certificates for agent
- *****************************************************************************/
-function generateMTLSCertificates(agentUid: string, workspaceUid: string): AgentMTLSCredentials {
-  // Certificate validity: 1 year
-  const validityDays = 365;
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + validityDays);
-
-  // Generate CA key pair
-  const caKeys = forge.pki.rsa.generateKeyPair(2048);
-  const caCert = forge.pki.createCertificate();
-  caCert.publicKey = caKeys.publicKey;
-  caCert.serialNumber = '01';
-  caCert.validity.notBefore = new Date();
-  caCert.validity.notAfter = expiresAt;
-
-  const caAttrs = [
-    { name: 'commonName', value: `Workspace ${workspaceUid} CA` },
-    { name: 'organizationName', value: 'SaaS Data Platform' },
-  ];
-  caCert.setSubject(caAttrs);
-  caCert.setIssuer(caAttrs);
-  caCert.setExtensions([
-    { name: 'basicConstraints', cA: true },
-    { name: 'keyUsage', keyCertSign: true, digitalSignature: true },
-  ]);
-  caCert.sign(caKeys.privateKey, forge.md.sha256.create());
-
-  // Generate client key pair
-  const clientKeys = forge.pki.rsa.generateKeyPair(2048);
-  const clientCert = forge.pki.createCertificate();
-  clientCert.publicKey = clientKeys.publicKey;
-  clientCert.serialNumber = '02';
-  clientCert.validity.notBefore = new Date();
-  clientCert.validity.notAfter = expiresAt;
-
-  const clientAttrs = [
-    { name: 'commonName', value: `agent-${agentUid}` },
-    { name: 'organizationName', value: 'SaaS Data Platform' },
-  ];
-  clientCert.setSubject(clientAttrs);
-  clientCert.setIssuer(caAttrs); // Signed by CA
-  clientCert.setExtensions([
-    { name: 'basicConstraints', cA: false },
-    { name: 'keyUsage', digitalSignature: true, keyEncipherment: true },
-    { name: 'extKeyUsage', clientAuth: true },
-  ]);
-  clientCert.sign(caKeys.privateKey, forge.md.sha256.create());
-
-  return {
-    caCert: forge.pki.certificateToPem(caCert),
-    clientCert: forge.pki.certificateToPem(clientCert),
-    clientKey: forge.pki.privateKeyToPem(clientKeys.privateKey),
-    expiresAt,
-  };
-}
-
-/******************************************************************************
  * Register workspace cluster agent
  *****************************************************************************/
 export async function registerWorkspaceClusterAgent({
@@ -1212,9 +1154,9 @@ export async function registerWorkspaceClusterAgent({
   const workspace = agent.workspace;
 
   // Check if agent is already registered
-  if (agent.status === 'Active') {
-    throw new HttpError(409, 'Agent is already registered');
-  }
+  // if (agent.status === 'Active') {
+  //   throw new HttpError(409, 'Agent is already registered');
+  // }
 
   if (agent.status === 'Deleted') {
     throw new HttpError(410, 'Agent has been deleted');
@@ -1224,8 +1166,9 @@ export async function registerWorkspaceClusterAgent({
     throw new HttpError(403, 'Agent is suspended');
   }
 
-  // Generate mTLS certificates
-  const mtls = generateMTLSCertificates(agent.uid, workspace.uid);
+  // Generate mTLS certificates via Step CA
+  const certService = new CertService();
+  const mtls = await certService.issueAgentCertificate(agent.uid, workspace.uid);
 
   // Store mTLS credential and update agent in a transaction
   await prisma.$transaction(async (tx) => {
