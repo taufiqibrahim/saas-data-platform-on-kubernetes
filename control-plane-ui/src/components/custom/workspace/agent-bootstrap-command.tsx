@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useRecordContext } from "ra-core";
+import { useRecordContext, useRefresh, useNotify } from "ra-core";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Terminal, Clock } from "lucide-react";
+import { Copy, Check, Terminal, Clock, RefreshCw } from "lucide-react";
+import { httpClient } from "@/dataProvider";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -12,7 +13,10 @@ const KUBERNETES_PROVIDERS = ["KUBERNETES", "AWS_EKS", "ALICLOUD_ACK"];
 
 export const AgentBootstrapCommand = () => {
   const record = useRecordContext();
+  const refresh = useRefresh();
+  const notify = useNotify();
   const [copied, setCopied] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   if (!record) return null;
 
@@ -51,6 +55,22 @@ export const AgentBootstrapCommand = () => {
     return date.toLocaleString();
   };
 
+  const handleRegenerateToken = async () => {
+    setIsRegenerating(true);
+    try {
+      await httpClient(`${apiUrl}/workspaces/${record.uid}/generateBootstrapToken`, {
+        method: "POST",
+      });
+      notify("Bootstrap token regenerated successfully", { type: "success" });
+      refresh();
+    } catch (error: any) {
+      const message = error?.body?.message || "Failed to regenerate token";
+      notify(message, { type: "error" });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   // If agent is already active, show status instead
   if (isAgentActive) {
     return (
@@ -61,7 +81,7 @@ export const AgentBootstrapCommand = () => {
             Agent Status
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="default" className="bg-green-600">Active</Badge>
             {clusterAgent.lastPingAt && (
@@ -69,6 +89,27 @@ export const AgentBootstrapCommand = () => {
                 Last seen: {formatExpiry(clusterAgent.lastPingAt)}
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <span className="text-xs text-muted-foreground">Lost credentials?</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleRegenerateToken}
+              disabled={isRegenerating}
+            >
+              {isRegenerating ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  Regenerating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Re-register Agent
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -129,9 +170,29 @@ export const AgentBootstrapCommand = () => {
         )}
 
         {isTokenExpired && (
-          <p className="text-sm text-destructive">
-            The bootstrap token has expired. Please generate a new one.
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-destructive">
+              The bootstrap token has expired.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRegenerateToken}
+              disabled={isRegenerating}
+            >
+              {isRegenerating ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  Regenerating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Regenerate Token
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>
