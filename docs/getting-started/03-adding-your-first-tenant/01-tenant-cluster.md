@@ -1,11 +1,5 @@
 # Setting Up Tenant Cluster
 
-## Install kind
-
-```bash
-go install sigs.k8s.io/kind@v0.31.0
-```
-
 ## Provision OpenBao (SaaS side)
 For each tenant, SaaS side must generates:
 
@@ -28,7 +22,7 @@ export TENANT_ID=tenant-0
 # ==========================================
 ```
 
-## Creating The Cluster
+## Creating Tenant Cluster
 
 We have prepared a shell script to automate the Kind cluster creation.
 
@@ -108,6 +102,10 @@ export TENANT_KEYVAULT_TOKEN=<tenant-token>
 
 ./deployments/tenants/bootstrap-tenant-cluster.sh
 ```
+
+## SaaS Style: One Liner curl
+
+
 
 ## Troubleshootings
 
