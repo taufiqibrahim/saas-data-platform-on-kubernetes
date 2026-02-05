@@ -124,9 +124,7 @@ services:
       - ./static/403.html:/srv/saas/403.html:ro
       - ./static/404.html:/srv/saas/404.html:ro
       - ./static/kubevela-addons:/srv/saas/kubevela-addons:ro
-      # - ./static/tenants:/srv/saas/tenants:ro
       - ./deployments/tenants:/srv/saas/tenants:ro
-      # - ./static:/srv/saas:ro
     restart: always
     depends_on:
       - step-ca
