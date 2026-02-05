@@ -235,7 +235,6 @@ async def workspace_app_on_create(
     # Merge with new labels
     patch.metadata["labels"] = {
         **existing_labels,  # Keep existing labels
-        f"{WORKSPACE_LABEL_PREFIX}/name": spec.get("workspace", "unknown"),
         f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID,  # Parent workspace
         f"{WORKSPACE_LABEL_PREFIX}/managed": "true",  # Managed by controller
         f"{WORKSPACE_LABEL_PREFIX}/type": name,  # Type of workspace app

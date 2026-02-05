@@ -43,9 +43,9 @@ def run_vela_addon(
             subprocess.run(full_command, check=True)
             return None
     except subprocess.CalledProcessError as e:
-        print(f"Command failed with return code {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
+        logger.error(f"Command failed with return code {e.returncode}")
+        logger.error(f"stdout: {e.stdout}")
+        logger.error(f"stderr: {e.stderr}")
         return None
 
 
@@ -82,7 +82,7 @@ def install_vela_addon(addon_identifier, addon_version, addon_parameters, logger
         logger,
         capture_output=True,
     )
-    print(addon_render_output)
+    # print(addon_render_output)
 
     body = yaml.safe_load(str(addon_render_output))
     api = client.CustomObjectsApi()
