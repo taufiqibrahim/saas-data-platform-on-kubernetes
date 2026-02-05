@@ -242,6 +242,11 @@ ensure_kubevela() {
     # FluxCD
     log_info "Installing addon fluxcd..."
     vela addon enable fluxcd namespace=$SYSTEM_NAMESPACE
+
+    # Terraform Controller
+    log_info "Installing addon terraform..."
+    vela addon enable terraform
+
 }
 
 ensure_kubevela_addon_registry() {
