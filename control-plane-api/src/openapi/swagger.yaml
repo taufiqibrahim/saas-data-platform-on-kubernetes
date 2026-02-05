@@ -134,6 +134,33 @@ components:
         - extAccountId
       type: object
       additionalProperties: false
+    GenerateBootstrapTokenResponse:
+      description: Response for generating a new bootstrap token
+      properties:
+        workspaceUid:
+          type: string
+          description: Workspace unique ID
+        extWorkspaceId:
+          type: string
+          description: External workspace ID
+        token:
+          type: string
+          description: New bootstrap token
+        expiredAt:
+          type: string
+          format: date-time
+          description: Token expiration date
+        agentStatus:
+          type: string
+          description: Agent status after regeneration
+      required:
+        - workspaceUid
+        - extWorkspaceId
+        - token
+        - expiredAt
+        - agentStatus
+      type: object
+      additionalProperties: false
     PlatformProviderRegionResponse:
       properties:
         uid:
@@ -290,11 +317,15 @@ components:
     AgentRegisterRequest:
       description: Request body for agent registration
       properties:
+        extWorkspaceId:
+          type: string
+          description: External workspace ID
         token:
           type: string
           description: Bootstrap token for agent registration
           example: abc123xyz...
       required:
+        - extWorkspaceId
         - token
       type: object
       additionalProperties: false
@@ -614,6 +645,41 @@ paths:
         Retrieves the detail of a workspace.
         Supply the unique workspace UID.
       summary: Get workspace detail
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters:
+        - in: path
+          name: workspaceUid
+          required: true
+          schema:
+            type: string
+  /workspaces/{workspaceUid}/generateBootstrapToken:
+    post:
+      operationId: GenerateBootstrapToken
+      responses:
+        "200":
+          description: Token Generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateBootstrapTokenResponse"
+        "400":
+          description: Validation Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateErrorJSON"
+      description: >-
+        Generate a new bootstrap token for a workspace.
+
+        Invalidates the existing token and resets agent status to
+        PendingRegistration.
+      summary: Generate new bootstrap token
       tags:
         - Workspaces
       security:

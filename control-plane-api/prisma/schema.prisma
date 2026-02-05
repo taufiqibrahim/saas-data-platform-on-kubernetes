@@ -478,6 +478,10 @@ model WorkspaceClusterAgent {
   bootstrapTokenId BigInt?                               @unique
   bootstrapTokens  WorkspaceClusterAgentBootstrapToken[] @relation("WorkspaceClusterAgentToBootstrapTokens")
 
+  mtlsCredential   WorkspaceClusterAgentMTLSCredential?  @relation("CurrentWorkspaceClusterAgentMTLSCredential", fields: [mtlsCredentialId], references: [id])
+  mtlsCredentialId BigInt?                               @unique
+  mtlsCredentials  WorkspaceClusterAgentMTLSCredential[] @relation("WorkspaceClusterAgentToMTLSCredentials")
+
   status WorkspaceClusterAgentStatus @default(PendingRegistration)
 
   lastPingAt DateTime?
@@ -499,6 +503,21 @@ model WorkspaceClusterAgentBootstrapToken {
   expiredAt DateTime
 
   @@map("workspace_cluster_agent_bootstrap_tokens")
+}
+
+model WorkspaceClusterAgentMTLSCredential {
+  id  BigInt @id @default(autoincrement())
+  uid String @unique @default(uuid())
+
+  workspaceClusterAgent           WorkspaceClusterAgent  @relation("WorkspaceClusterAgentToMTLSCredentials", fields: [workspaceClusterAgentId], references: [id])
+  workspaceClusterAgentId         BigInt
+  currentForWorkspaceClusterAgent WorkspaceClusterAgent? @relation("CurrentWorkspaceClusterAgentMTLSCredential")
+
+  caCert    String   @db.Text // CA certificate in PEM format for verifying agent connections
+  createdAt DateTime @default(now())
+  expiresAt DateTime // Certificate expiration date
+
+  @@map("workspace_cluster_agent_mtls_credentials")
 }
 
 // model WorkspaceBootstrapToken {

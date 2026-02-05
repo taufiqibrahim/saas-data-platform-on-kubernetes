@@ -18,7 +18,7 @@ import {
 import { authenticationMiddleware } from '@/middlewares/authentication.middleware';
 
 import * as WorkspaceService from './workspace.service';
-import { CreateWorkspaceRequestBody, ListWorkspacesResponse, WorkspaceResponse } from './workspace.type';
+import { CreateWorkspaceRequestBody, GenerateBootstrapTokenResponse, ListWorkspacesResponse, WorkspaceResponse } from './workspace.type';
 import { ValidateErrorJSON } from '../_shared/shared.type';
 
 // import { PartialWorkspacePatchInput, Workspace, WorkspaceCreateInput, WorkspaceList, WorkspaceProvisioningConfig, WorkspaceProvisioningConfigList, WorkspaceProvisionConfigResponse } from './workspace.type';
@@ -101,22 +101,23 @@ export class WorkspaceController extends Controller {
     });
   }
 
-  // /**
-  //  * Bootstrap new workspace cluster
-  //  * @summary Bootstrap new workspace cluster
-  //  */
-  // @Post('/{workspaceUid}/bootstrapCluster')
-  // @SuccessResponse('200')
-  // @Response<ValidateErrorJSON>(400, 'Validation Failed')
-  // public async createBootstrapToken(
-  //   @Request() req: express.Request,
-  //   @Path() workspaceUid: string
-  // ): Promise<BootstrapWorkspaceClusterResponse> {
-  //   return await WorkspaceService.bootstrapWorkspaceCluster({
-  //     principal: req.principal,
-  //     workspaceUid,
-  //   });
-  // }
+  /**
+   * Generate a new bootstrap token for a workspace.
+   * Invalidates the existing token and resets agent status to PendingRegistration.
+   * @summary Generate new bootstrap token
+   */
+  @Post('/{workspaceUid}/generateBootstrapToken')
+  @SuccessResponse('200', 'Token Generated')
+  @Response<ValidateErrorJSON>(400, 'Validation Failed')
+  public async generateBootstrapToken(
+    @Request() req: express.Request,
+    @Path() workspaceUid: string
+  ): Promise<GenerateBootstrapTokenResponse> {
+    return await WorkspaceService.generateBootstrapToken({
+      principal: req.principal,
+      workspaceUid,
+    });
+  }
 
   // /**
   //  * Create new workspace provision config

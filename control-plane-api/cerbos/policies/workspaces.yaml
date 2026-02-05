@@ -26,10 +26,20 @@ resourcePolicy:
 
     # ─────────────────────────────
     # Tenant
-    # Get a workspace
+    # Create workspace bootstrap token
     # ─────────────────────────────
     - actions:
         - "workspace:createWorkspaceBootstrapToken"
+      effect: EFFECT_ALLOW
+      roles:
+        - "UserRole"
+
+    # ─────────────────────────────
+    # Tenant
+    # Generate (regenerate) bootstrap token
+    # ─────────────────────────────
+    - actions:
+        - "workspace:generateBootstrapToken"
       effect: EFFECT_ALLOW
       roles:
         - "UserRole"

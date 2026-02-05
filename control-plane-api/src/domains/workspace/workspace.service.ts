@@ -13,7 +13,7 @@ import logger from '@/config/logger';
 import { offsetPagination } from '@/utils/api';
 
 import { workspaceSelect } from './workspace.select';
-import { AgentMTLSCredentials, AgentRegisterRequest, AgentRegisterResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceFilters, WorkspaceResponse } from './workspace.type';
+import { AgentMTLSCredentials, AgentRegisterRequest, AgentRegisterResponse, GenerateBootstrapTokenParams, GenerateBootstrapTokenResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceFilters, WorkspaceResponse } from './workspace.type';
 import { checkPermission } from '@/middlewares/authorization.middleware';
 import { generateWorkspaceId } from '@/utils/idGenerator';
 import { createdByPrincipalSelect } from '../principal/principal.select';
@@ -1027,6 +1027,99 @@ export async function getWorkspace({
 // }
 
 /******************************************************************************
+ * Generate new bootstrap token for workspace
+ *****************************************************************************/
+export async function generateBootstrapToken({
+  principal,
+  workspaceUid,
+}: GenerateBootstrapTokenParams): Promise<GenerateBootstrapTokenResponse> {
+  await checkPermission({
+    principal,
+    resource: {
+      kind: 'workspace',
+      id: workspaceUid,
+    },
+    action: 'workspace:generateBootstrapToken',
+  });
+
+  // Find the workspace
+  const workspace = await prisma.workspace.findUnique({
+    where: {
+      uid: workspaceUid,
+      deletedAt: null,
+    },
+    include: {
+      clusterAgent: {
+        include: {
+          bootstrapToken: true,
+        },
+      },
+    },
+  });
+
+  if (!workspace) {
+    throw new HttpError(404, 'Workspace not found');
+  }
+
+  if (!workspace.clusterAgent) {
+    throw new HttpError(400, 'Workspace does not have a cluster agent');
+  }
+
+  const agent = workspace.clusterAgent;
+
+  // Generate new bootstrap token in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Invalidate existing bootstrap token by setting expiredAt to now
+    if (agent.bootstrapTokenId) {
+      await tx.workspaceClusterAgentBootstrapToken.update({
+        where: { id: agent.bootstrapTokenId },
+        data: { expiredAt: new Date() },
+      });
+    }
+
+    // Generate a new secure random token
+    const token = randomBytes(32).toString('base64url');
+
+    // Set expiration (24 hours from now)
+    const expiredAt = new Date();
+    expiredAt.setHours(expiredAt.getHours() + 24);
+
+    // Create new bootstrap token
+    const newBootstrapToken = await tx.workspaceClusterAgentBootstrapToken.create({
+      data: {
+        workspaceClusterAgentId: agent.id,
+        token,
+        expiredAt,
+      },
+    });
+
+    // Update agent to point to new token and reset status to PendingRegistration
+    await tx.workspaceClusterAgent.update({
+      where: { id: agent.id },
+      data: {
+        bootstrapTokenId: newBootstrapToken.id,
+        status: 'PendingRegistration',
+      },
+    });
+
+    return {
+      token,
+      expiredAt,
+    };
+  });
+
+  logger.info({ workspaceUid, agentUid: agent.uid }, 'Bootstrap token regenerated, agent status reset to PendingRegistration');
+
+  return {
+    workspaceUid: workspace.uid,
+    extWorkspaceId: workspace.extWorkspaceId,
+    token: result.token,
+    expiredAt: result.expiredAt,
+    agentStatus: 'PendingRegistration',
+  };
+}
+
+/******************************************************************************
  * Generate mTLS certificates for agent
  *****************************************************************************/
 function generateMTLSCertificates(agentUid: string, workspaceUid: string): AgentMTLSCredentials {
@@ -1088,12 +1181,14 @@ function generateMTLSCertificates(agentUid: string, workspaceUid: string): Agent
  * Register workspace cluster agent
  *****************************************************************************/
 export async function registerWorkspaceClusterAgent({
+  extWorkspaceId,
   token,
 }: AgentRegisterRequest): Promise<AgentRegisterResponse> {
   // Find the bootstrap token
   const bootstrapToken = await prisma.workspaceClusterAgentBootstrapToken.findFirst({
     where: {
       token,
+      workspaceClusterAgent: {workspace: {extWorkspaceId}}
     },
     include: {
       workspaceClusterAgent: {
@@ -1132,13 +1227,26 @@ export async function registerWorkspaceClusterAgent({
   // Generate mTLS certificates
   const mtls = generateMTLSCertificates(agent.uid, workspace.uid);
 
-  // Update agent status to Active and set lastPingAt
-  await prisma.workspaceClusterAgent.update({
-    where: { id: agent.id },
-    data: {
-      status: 'Active',
-      lastPingAt: new Date(),
-    },
+  // Store mTLS credential and update agent in a transaction
+  await prisma.$transaction(async (tx) => {
+    // Create mTLS credential record to store the CA cert for server-side verification
+    const mtlsCredential = await tx.workspaceClusterAgentMTLSCredential.create({
+      data: {
+        workspaceClusterAgentId: agent.id,
+        caCert: mtls.caCert,
+        expiresAt: mtls.expiresAt,
+      },
+    });
+
+    // Update agent status to Active, set lastPingAt, and link to mTLS credential
+    await tx.workspaceClusterAgent.update({
+      where: { id: agent.id },
+      data: {
+        status: 'Active',
+        lastPingAt: new Date(),
+        mtlsCredentialId: mtlsCredential.id,
+      },
+    });
   });
 
   logger.info({ agentUid: agent.uid, workspaceUid: workspace.uid }, 'Agent registered successfully');

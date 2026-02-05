@@ -263,6 +263,10 @@ export interface ProvisionWorkspaceData {
  */
 export interface AgentRegisterRequest {
   /**
+   * External workspace ID
+   */
+  extWorkspaceId: string;
+  /**
    * Bootstrap token for agent registration
    * @example "abc123xyz..."
    */
@@ -311,4 +315,39 @@ export interface AgentRegisterResponse {
    * mTLS credentials for secure communication
    */
   mtls: AgentMTLSCredentials;
+}
+
+/******************************************************************************
+ * Generate Bootstrap Token Types
+ *****************************************************************************/
+
+export interface GenerateBootstrapTokenParams {
+  principal: PrincipalAuthInfo;
+  workspaceUid: string;
+}
+
+/**
+ * Response for generating a new bootstrap token
+ */
+export interface GenerateBootstrapTokenResponse {
+  /**
+   * Workspace unique ID
+   */
+  workspaceUid: string;
+  /**
+   * External workspace ID
+   */
+  extWorkspaceId: string;
+  /**
+   * New bootstrap token
+   */
+  token: string;
+  /**
+   * Token expiration date
+   */
+  expiredAt: Date;
+  /**
+   * Agent status after regeneration
+   */
+  agentStatus: string;
 }
