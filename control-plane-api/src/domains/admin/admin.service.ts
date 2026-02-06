@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
+import { prisma } from '@/clients/prisma.client';
 import { connectTemporalClient } from '@/clients/temporal.client';
 import { checkPermission } from '@/middlewares/authorization.middleware';
 import { TASK_QUEUES } from '@/temporal/constants';
@@ -10,8 +9,6 @@ import { DEFAULT_ACCOUNT_ROLES } from '../account/account.constant';
 import * as AccountService from '../account/account.service';
 import { AccountResponse, ProvisionAccountData } from '../account/account.type';
 import * as PrincipalService from '../principal/principal.service';
-
-const prisma = new PrismaClient();
 
 export async function provisionAccount({
   principal,

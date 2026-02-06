@@ -1,8 +1,7 @@
-import { AccountStatusEnum, PrismaClient } from '@prisma/client';
+import { AccountStatusEnum } from '@prisma/client';
 
 import { createAuthProvisioningAdapter } from '@/adapters/createAuthProvisioningAdapter';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/clients/prisma.client';
 
 /**
  * External auth / Keycloak

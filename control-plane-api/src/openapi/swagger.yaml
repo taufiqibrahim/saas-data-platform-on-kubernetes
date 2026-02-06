@@ -1028,12 +1028,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentSyncResponse"
-        "400":
-          description: Validation Failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ValidateErrorJSON"
         "401":
           description: Invalid or missing certificate
           content:

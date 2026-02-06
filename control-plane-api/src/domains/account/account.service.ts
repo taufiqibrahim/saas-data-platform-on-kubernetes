@@ -1,6 +1,7 @@
 // import * as AccountMemberService from '@domains/account/accountMember.service';
-import { Account, Prisma, PrismaClient } from '@prisma/client';
+import { Account, Prisma } from '@prisma/client';
 
+import { prisma } from '@/clients/prisma.client';
 import logger from '@/config/logger';
 import { checkPermission } from '@/middlewares/authorization.middleware';
 import { HttpError } from '@/types/errors';
@@ -29,8 +30,6 @@ import {
   ProvisionAccountData,
   ProvisionAccountMembershipData,
 } from './account.type';
-
-const prisma = new PrismaClient();
 
 export const accountSelect = Prisma.validator<Prisma.AccountSelect>()({
   uid: true,

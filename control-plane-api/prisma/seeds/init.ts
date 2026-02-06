@@ -1,8 +1,12 @@
-import { PrismaClient, PlatformProviderNameEnum } from '@prisma/client';
+import { PlatformProviderNameEnum, PrismaClient } from '@prisma/client';
+
 import { supportedPlatformProviders } from './platform.seed';
 import { systemPrincipals, systemRoles } from './roles.seed';
 import { apps } from './apps.seed';
-const prisma = new PrismaClient();
+
+const prisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL,
+});
 
 async function seedSupportedPlatformProviders() {
   console.log('Seeding supported platform providers...');

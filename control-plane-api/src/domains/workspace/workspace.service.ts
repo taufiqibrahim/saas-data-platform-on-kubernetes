@@ -1,7 +1,8 @@
 // import * as RoleService from '@domains/permission/role.service';
 // import * as WorkspaceMemberService from '@domains/workspace/workspaceMember.service';
-import { Prisma, PrismaClient, Workspace } from '@prisma/client';
+import { Prisma, Workspace } from '@prisma/client';
 
+import { prisma } from '@/clients/prisma.client';
 // import { WorkflowHandle } from '@temporalio/client';
 // import * as KeycloakAdminService from '../authentication/keycloakAdmin.service';
 // import { connectTemporalClient } from '@/clients/temporal.client';
@@ -40,8 +41,6 @@ import { CertService } from '../certificate/cert.service';
 // } from './workspace.type';
 // import { initKeycloakAdminClient } from '@/clients/keycloak-admin.client';
 // import { realmDefinition } from '@/config/declarative-realm-template';
-
-const prisma = new PrismaClient();
 
 // /******************************************************************************
 //  * Workspace workflow wrapper

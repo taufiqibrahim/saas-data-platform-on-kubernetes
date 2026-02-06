@@ -1,5 +1,6 @@
-import { Principal, Prisma, PrismaClient } from '@prisma/client';
+import { Principal, Prisma } from '@prisma/client';
 
+import { prisma } from '@/clients/prisma.client';
 import { checkPermission } from '@/middlewares/authorization.middleware';
 import { PrincipalAuthInfo } from '@/types/auth-middleware-types';
 import { HttpError } from '@/types/errors';
@@ -10,8 +11,6 @@ import {
   ListPrincipalsResponse,
   ProvisionPrincipalData,
 } from './principal.type';
-
-const prisma = new PrismaClient();
 
 export async function getPrincipalAuthInfo(email: string): Promise<PrincipalAuthInfo> {
   const principalAuthInfo = await prisma.principal.findUnique({

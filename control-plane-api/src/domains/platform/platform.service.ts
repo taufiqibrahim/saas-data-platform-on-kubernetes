@@ -2,9 +2,9 @@ import {
   PlatformProvider,
   PlatformProviderNameEnum,
   PlatformProviderRegion,
-  PrismaClient,
 } from '@prisma/client';
 
+import { prisma } from '@/clients/prisma.client';
 import { HttpError } from '@/types/errors';
 import { offsetPagination } from '@/utils/api';
 
@@ -15,8 +15,6 @@ import {
   ListPlatformProvidersParams,
   ListPlatformProvidersResponse,
 } from './platform.type';
-
-const prisma = new PrismaClient();
 
 export async function listPlatformProviders({
   filters = {},
