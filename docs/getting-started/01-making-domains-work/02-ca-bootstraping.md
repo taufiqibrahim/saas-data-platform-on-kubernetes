@@ -105,7 +105,35 @@ All data generated is stored in `docker/step-ca` directory.
 
 We will install **only the root CA**.
 
-## Step 3 — Install Root CA into OS Trust Store
+## Step 3 — Configure Certificate Duration (Optional)
+
+By default, Step CA limits certificate duration to **24 hours**. For development or long-lived certificates, you may want to increase this limit.
+
+Edit `docker/step-ca/config/ca.json` and add a `claims` block to the provisioner you want to configure (e.g., the `admin` JWK provisioner):
+
+```json
+{
+  "type": "JWK",
+  "name": "admin",
+  "key": { ... },
+  "encryptedKey": "...",
+  "claims": {
+    "minTLSCertDuration": "5m",
+    "maxTLSCertDuration": "8760h",
+    "defaultTLSCertDuration": "24h"
+  }
+}
+```
+
+| Claim | Description | Example |
+|-------|-------------|---------|
+| `minTLSCertDuration` | Minimum allowed certificate lifetime | `5m` |
+| `maxTLSCertDuration` | Maximum allowed certificate lifetime | `8760h` (1 year) |
+| `defaultTLSCertDuration` | Default if not specified in request | `24h` |
+
+> After modifying `ca.json`, restart the Step CA container: `docker compose restart step-ca`
+
+## Step 4 — Install Root CA into OS Trust Store
 
 ### Linux (Ubuntu / Debian)
 
