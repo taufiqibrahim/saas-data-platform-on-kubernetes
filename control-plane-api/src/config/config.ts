@@ -62,6 +62,38 @@ export interface TemporalConfig {
   namespace: string;
 }
 
+// =============================================================================
+// CA Provider Configuration
+// =============================================================================
+
+export type CaProviderType = 'self-signed' | 'step-ca' | 'aws-pca';
+
+export interface SelfSignedCaConfig {
+  provider: 'self-signed';
+  validityDays: number;
+}
+
+export interface StepCaCaConfig {
+  provider: 'step-ca';
+  url: string;
+  rootCertPath: string;
+  caCertPath: string;
+  intermediateCertPath: string;
+  provisioner: string;
+  jwkPrivateKey: string;
+  validityDays: number;
+}
+
+export interface AwsPcaCaConfig {
+  provider: 'aws-pca';
+  caArn: string;
+  caCertPath: string;
+  region: string;
+  validityDays: number;
+}
+
+export type CaConfig = SelfSignedCaConfig | StepCaCaConfig | AwsPcaCaConfig;
+
 export interface TofuAWSConfig {
   region: string;
   s3Bucket: string;
@@ -102,6 +134,7 @@ export interface AllowedTokens {
 }
 
 export interface AppConfig {
+  name: string;
   baseUrl: string;
   listenPort: number;
   logLevel: string;
@@ -110,6 +143,9 @@ export interface AppConfig {
   nodeEnv: string;
   baseProtocol: string;
   baseDomain: string;
+  serverCACertPath: string;
+  serverKeyPath: string;
+  serverCertPath: string;
 }
 
 export interface Config {
@@ -122,6 +158,7 @@ export interface Config {
   keycloakAdmin: KeycloakAdminConfig;
   keycloakProvisioningEnableLocalClients: boolean;
   temporal: TemporalConfig;
+  ca: CaConfig;
 
   // tofu: TofuConfig;
   // masterRealm: string;
@@ -193,6 +230,47 @@ const temporalConfig: TemporalConfig = {
   namespace: process.env.TEMPORAL_NAMESPACE || 'default',
 };
 
+// =============================================================================
+// CA Configuration (dynamic based on CA_PROVIDER)
+// =============================================================================
+
+function buildCaConfig(): CaConfig {
+  const provider = (process.env.CA_PROVIDER || 'self-signed') as CaProviderType;
+
+  switch (provider) {
+    case 'step-ca':
+
+      return {
+        provider: 'step-ca',
+        url: process.env.STEP_CA_URL || 'https://ca.saas.internal:9000',
+        caCertPath: process.env.STEP_CA_ROOT || './docker/step-ca/certs/root_ca.crt',
+        rootCertPath: process.env.STEP_CA_ROOT || './docker/step-ca/certs/root_ca.crt',
+        intermediateCertPath: process.env.STEP_CA_INTERMEDIATE || './docker/step-ca/certs/intermediate_ca.crt',
+        provisioner: process.env.STEP_CA_PROVISIONER || 'admin',
+        jwkPrivateKey: process.env.STEP_CA_JWK_PRIVATE_KEY || '',
+        validityDays: Number(process.env.CA_CERT_VALIDITY_DAYS) || 90,
+      };
+
+    case 'aws-pca':
+      return {
+        provider: 'aws-pca',
+        caArn: process.env.AWS_PCA_ARN || '',
+        caCertPath: process.env.AWS_PCA_CA_CERT || '',
+        region: process.env.AWS_REGION || 'us-east-1',
+        validityDays: Number(process.env.CA_CERT_VALIDITY_DAYS) || 365,
+      };
+
+    case 'self-signed':
+    default:
+      return {
+        provider: 'self-signed',
+        validityDays: Number(process.env.CA_CERT_VALIDITY_DAYS) || 365,
+      };
+  }
+}
+
+const caConfig = buildCaConfig();
+
 // const tofuConfig: TofuConfig = {
 //   tofuRepoUrl: process.env.TOFU_REPO_URL || 'git@github.com:saas/saas-infra-master.git',
 //   tofuRepoRevision: process.env.TOFU_REPO_REVISION || 'core-platform/0.0.1',
@@ -225,7 +303,11 @@ const temporalConfig: TemporalConfig = {
 const listenPort = Number(process.env.LISTEN_PORT) || 5001;
 
 const appConfig: AppConfig = {
+  name: process.env.APP_NAME || 'Local SaaS',
   baseUrl: process.env.BASE_URL || `https://localhost:${listenPort}`,
+  serverCACertPath: process.env.SERVER_CA_CERT_PATH || './etc/certs/server/root_ca.crt',
+  serverCertPath: process.env.SERVER_CERT_PATH || './etc/certs/server/server.crt',
+  serverKeyPath: process.env.SERVER_KEY_PATH || './etc/certs/server/server.key',
   listenPort: listenPort,
   logLevel: process.env.LOG_LEVEL || 'info',
   jsonLimit: process.env.JSON_LIMIT || '10mb',
@@ -248,6 +330,7 @@ const config: Config = {
     process.env.KEYCLOAK_PROVISIONING_ENABLE_LOCAL_CLIENTS?.toLowerCase() === 'true' ? true : false,
   smtp: smtpConfig,
   temporal: temporalConfig,
+  ca: caConfig,
 
   // masterRealm: 'master',
   // controlPlaneClient: 'controlplane',

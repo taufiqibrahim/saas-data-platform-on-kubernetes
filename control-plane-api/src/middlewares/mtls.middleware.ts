@@ -1,38 +1,44 @@
 import { Request, Response, NextFunction } from 'express';
 import { TLSSocket } from "tls";
-import forge from 'node-forge';
-import { CertService } from '../domains/certificate/cert.service';
 import logger from '@/config/logger';
-
-const certService = new CertService();
+import config from '@/config/config';
 
 export function requireMTLS(req: Request, res: Response, next: NextFunction) {
   try {
-    // Get client certificate from TLS connection
+
     const tlsSocket = req.socket as TLSSocket;
-    const cert = tlsSocket.getPeerCertificate();
 
-    if (!cert || !cert.raw) {
-      return res.status(401).json({ error: 'No client certificate provided' });
+    // 1. Cryptographic gate (TLS already validated everything)
+    if (!tlsSocket.authorized) {
+      return res.status(401).json({
+        error: tlsSocket.authorizationError || "Unauthorized",
+      });
     }
 
-    // Convert to PEM
-    const certPem = forge.pki.certificateToPem(
-      forge.pki.certificateFromAsn1(
-        forge.asn1.fromDer(cert.raw.toString('binary'))
-      )
-    );
-
-    // Verify certificate
-    const { valid, agentId, workspaceId } = certService.verifyCertificate(certPem);
-
-    if (!valid || !agentId) {
-      return res.status(401).json({ error: 'Invalid certificate' });
+    // 2. Extract peer certificate
+    const cert = tlsSocket.getPeerCertificate(true);
+    if (!cert || !cert.subject) {
+      return res.status(401).json({ error: "No client certificate provided" });
     }
 
-    // Attach identity to request for downstream handlers
+    // 3. Identity validation (this is ALL app logic should do)
+    const cn = cert.subject.CN || "";
+    if (!cn.startsWith("agent-")) {
+      return res.status(401).json({ error: "Invalid agent certificate" });
+    }
+
+    const agentId = cn.replace("agent-", "");
+    const workspaceId = cert.subject.OU;
+
+    // Optional issuer pinning
+    if (cert.issuer.CN !== `${config.app.name} Intermediate CA`) {
+      return res.status(401).json({ error: "Invalid certificate issuer" });
+    }
+
+    // 4. Attach identity
     (req as any).agentId = agentId;
     (req as any).workspaceId = workspaceId;
+
     return next();
   } catch (error) {
     logger.error({ error }, 'mTLS verification error:');

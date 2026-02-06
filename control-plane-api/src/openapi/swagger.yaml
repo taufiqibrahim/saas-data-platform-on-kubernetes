@@ -274,7 +274,8 @@ components:
       properties:
         caCert:
           type: string
-          description: CA certificate in PEM format
+          description: CA certificate in PEM format (required for self-signed, optional
+            for step-ca/aws-pca)
         clientCert:
           type: string
           description: Client certificate in PEM format
@@ -285,8 +286,20 @@ components:
           type: string
           format: date-time
           description: Certificate expiration date
+        certSerialNumber:
+          type: string
+          description: Certificate serial number (hex string) for tracking/revocation
+        certFingerprint:
+          type: string
+          description: Certificate fingerprint (SHA-256 of DER)
+        caProvider:
+          type: string
+          enum:
+            - self-signed
+            - step-ca
+            - aws-pca
+          description: CA provider type that issued the certificate
       required:
-        - caCert
         - clientCert
         - clientKey
         - expiresAt
@@ -327,6 +340,92 @@ components:
       required:
         - extWorkspaceId
         - token
+      type: object
+      additionalProperties: false
+    Record_string.unknown_:
+      properties: {}
+      additionalProperties: {}
+      type: object
+      description: Construct a type with a set of properties K of type T
+    WorkspaceConfig:
+      description: Workspace configuration returned to agent
+      properties:
+        uid:
+          type: string
+          description: Workspace unique ID
+        extWorkspaceId:
+          type: string
+          description: External workspace ID
+        name:
+          type: string
+          description: Workspace name
+        status:
+          type: string
+          description: Current workspace status
+        metadata:
+          $ref: "#/components/schemas/Record_string.unknown_"
+          description: Workspace metadata/configuration
+      required:
+        - uid
+        - extWorkspaceId
+        - name
+        - status
+        - metadata
+      type: object
+      additionalProperties: false
+    AgentSyncResponse:
+      description: Response for agent sync endpoint
+      properties:
+        agentUid:
+          type: string
+          description: Agent unique ID
+        workspace:
+          $ref: "#/components/schemas/WorkspaceConfig"
+          description: Workspace configuration
+        serverTime:
+          type: string
+          format: date-time
+          description: Server timestamp for sync
+        syncIntervalSeconds:
+          type: number
+          format: double
+          description: Recommended interval until next sync (seconds)
+      required:
+        - agentUid
+        - workspace
+        - serverTime
+        - syncIntervalSeconds
+      type: object
+      additionalProperties: false
+    AgentStatusReport:
+      description: Agent status report sent during sync
+      properties:
+        healthy:
+          type: boolean
+          description: Whether the agent is healthy
+        message:
+          type: string
+          description: Optional status message
+      required:
+        - healthy
+      type: object
+      additionalProperties: false
+    AgentSyncRequest:
+      description: Request body for agent sync endpoint
+      properties:
+        agentVersion:
+          type: string
+          description: Agent software version
+        kubernetesVersion:
+          type: string
+          description: Kubernetes cluster version
+        nodeCount:
+          type: number
+          format: double
+          description: Number of nodes in the cluster
+        status:
+          $ref: "#/components/schemas/AgentStatusReport"
+          description: Agent health status
       type: object
       additionalProperties: false
     PrincipalResponse:
@@ -919,6 +1018,88 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AgentRegisterRequest"
+  /agent/sync:
+    post:
+      operationId: SyncAgent
+      responses:
+        "200":
+          description: Synced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentSyncResponse"
+        "400":
+          description: Validation Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateErrorJSON"
+        "401":
+          description: Invalid or missing certificate
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+        "403":
+          description: Agent is suspended or not registered
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+        "410":
+          description: Agent has been deleted
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+                type: object
+      description: >-
+        Sync agent state with control plane.
+
+        Agent sends telemetry/status and receives workspace configuration.
+
+        This endpoint requires mTLS authentication - the agent identity is
+        extracted from the client certificate.
+      summary: Sync agent
+      tags:
+        - Agent
+      security:
+        - bearerAuth: []
+        - oauth2PasswordSSO: []
+        - pkceSSO:
+            - openid
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentSyncRequest"
   /health:
     get:
       operationId: GetHealthCheck

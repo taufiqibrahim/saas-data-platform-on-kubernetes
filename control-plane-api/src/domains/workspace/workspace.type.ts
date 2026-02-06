@@ -278,9 +278,9 @@ export interface AgentRegisterRequest {
  */
 export interface AgentMTLSCredentials {
   /**
-   * CA certificate in PEM format
+   * CA certificate in PEM format (required for self-signed, optional for step-ca/aws-pca)
    */
-  caCert: string;
+  caCert?: string;
   /**
    * Client certificate in PEM format
    */
@@ -293,6 +293,18 @@ export interface AgentMTLSCredentials {
    * Certificate expiration date
    */
   expiresAt: Date;
+  /**
+   * Certificate serial number (hex string) for tracking/revocation
+   */
+  certSerialNumber?: string;
+  /**
+   * Certificate fingerprint (SHA-256 of DER)
+   */
+  certFingerprint?: string;
+  /**
+   * CA provider type that issued the certificate
+   */
+  caProvider?: 'self-signed' | 'step-ca' | 'aws-pca';
 }
 
 /**
@@ -350,4 +362,100 @@ export interface GenerateBootstrapTokenResponse {
    * Agent status after regeneration
    */
   agentStatus: string;
+}
+
+/******************************************************************************
+ * Agent Sync Types (for KOPF controller polling)
+ *****************************************************************************/
+
+/**
+ * Agent status report sent during sync
+ */
+export interface AgentStatusReport {
+  /**
+   * Whether the agent is healthy
+   */
+  healthy: boolean;
+  /**
+   * Optional status message
+   */
+  message?: string;
+}
+
+/**
+ * Request body for agent sync endpoint
+ */
+export interface AgentSyncRequest {
+  /**
+   * Agent software version
+   */
+  agentVersion?: string;
+  /**
+   * Kubernetes cluster version
+   */
+  kubernetesVersion?: string;
+  /**
+   * Number of nodes in the cluster
+   */
+  nodeCount?: number;
+  /**
+   * Agent health status
+   */
+  status?: AgentStatusReport;
+}
+
+/**
+ * Workspace configuration returned to agent
+ */
+export interface WorkspaceConfig {
+  /**
+   * Workspace unique ID
+   */
+  uid: string;
+  /**
+   * External workspace ID
+   */
+  extWorkspaceId: string;
+  /**
+   * Workspace name
+   */
+  name: string;
+  /**
+   * Current workspace status
+   */
+  status: string;
+  /**
+   * Workspace metadata/configuration
+   */
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * Response for agent sync endpoint
+ */
+export interface AgentSyncResponse {
+  /**
+   * Agent unique ID
+   */
+  agentUid: string;
+  /**
+   * Workspace configuration
+   */
+  workspace: WorkspaceConfig;
+  /**
+   * Server timestamp for sync
+   */
+  serverTime: Date;
+  /**
+   * Recommended interval until next sync (seconds)
+   */
+  syncIntervalSeconds: number;
+}
+
+/**
+ * Internal params for agent sync service
+ */
+export interface AgentSyncParams {
+  agentUid: string;
+  data: AgentSyncRequest;
 }

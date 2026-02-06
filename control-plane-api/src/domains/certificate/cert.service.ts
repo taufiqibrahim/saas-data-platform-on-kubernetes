@@ -1,74 +1,225 @@
+/**
+ * Certificate Service for mTLS Certificate Management
+ *
+ * Supports multiple CA backends via provider pattern:
+ * - SelfSignedProvider: Per-workspace self-signed CA (default, simplest)
+ * - StepCaProvider: Shared CA via Step CA HTTP API
+ * - AwsPcaProvider: AWS Private CA (production)
+ *
+ * Configure via config.ca (CA_PROVIDER env var): "self-signed" | "step-ca" | "aws-pca"
+ */
+
 import * as forge from 'node-forge';
 import * as https from 'https';
 import * as crypto from 'crypto';
+import { X509Certificate } from 'crypto';
+import * as path from 'path';
 import { sign } from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import logger from '@/config/logger';
+import config, {
+  CaConfig,
+  SelfSignedCaConfig,
+  StepCaCaConfig,
+  AwsPcaCaConfig,
+} from '@/config/config';
 import { AgentMTLSCredentials } from '../workspace/workspace.type';
 
-export interface CertVerificationResult {
-  valid: boolean;
-  agentId?: string;
-  workspaceId?: string;
-  expiresAt?: Date;
-}
+// =============================================================================
+// Types
+// =============================================================================
 
-/**
- * Certificate Provider interface for easy migration between CA backends
- * Implementations: StepCaProvider (local/dev), AwsPcaProvider (production)
- */
 export interface CertProvider {
   issueCertificate(
     commonName: string,
     metadata: { agentUid: string; workspaceUid: string }
   ): Promise<AgentMTLSCredentials>;
 
-  verifyCertificate(certPem: string): CertVerificationResult;
-
-  getCaCertificate(): string;
+  getCaCertificate?(): string;
 }
 
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
 /**
- * Step CA provider using smallstep CA HTTP API
- * Docs: https://smallstep.com/docs/step-ca/certificate-authority-server-production
+ * Extract serial number and fingerprint from a PEM certificate
+ */
+function extractCertMetadata(certPem: string): { serialNumber: string; fingerprint: string } {
+  const cert = new X509Certificate(certPem);
+  return {
+    serialNumber: cert.serialNumber,
+    fingerprint: cert.fingerprint256.replace(/:/g, '').toLowerCase(),
+  };
+}
+
+// =============================================================================
+// Provider 1: Self-Signed (Default)
+// =============================================================================
+
+/**
+ * Self-Signed Certificate Provider
+ *
+ * Generates a unique CA per workspace. Simple, no external dependencies.
+ *
+ * PKI Structure:
+ *   Workspace CA (self-signed) → Agent Cert (leaf)
+ *
+ * Pros:
+ * - No external CA infrastructure needed
+ * - Works immediately
+ * - Each workspace isolated
+ *
+ * Cons:
+ * - Can't verify cross-workspace
+ * - CA cert must be stored with agent for verification
+ */
+class SelfSignedProvider implements CertProvider {
+  private validityDays: number;
+
+  constructor(caConfig: SelfSignedCaConfig) {
+    this.validityDays = caConfig.validityDays;
+    logger.info({ validityDays: this.validityDays }, 'Initialized self-signed CA provider');
+  }
+
+  async issueCertificate(
+    commonName: string,
+    metadata: { agentUid: string; workspaceUid: string }
+  ): Promise<AgentMTLSCredentials> {
+    const { agentUid, workspaceUid } = metadata;
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + this.validityDays);
+
+    // Generate Workspace CA (self-signed)
+    const caKeys = forge.pki.rsa.generateKeyPair(2048);
+    const caCert = forge.pki.createCertificate();
+
+    caCert.publicKey = caKeys.publicKey;
+    caCert.serialNumber = '01';
+    caCert.validity.notBefore = new Date();
+    caCert.validity.notAfter = expiresAt;
+
+    const caAttrs = [
+      { name: 'commonName', value: `Workspace ${workspaceUid} CA` },
+      { name: 'organizationName', value: 'SaaS Data Platform' },
+    ];
+    caCert.setSubject(caAttrs);
+    caCert.setIssuer(caAttrs);
+    caCert.setExtensions([
+      { name: 'basicConstraints', cA: true },
+      { name: 'keyUsage', keyCertSign: true, digitalSignature: true },
+    ]);
+    caCert.sign(caKeys.privateKey, forge.md.sha256.create());
+
+    // Generate Agent Certificate
+    const clientKeys = forge.pki.rsa.generateKeyPair(2048);
+    const clientCert = forge.pki.createCertificate();
+
+    clientCert.publicKey = clientKeys.publicKey;
+    clientCert.serialNumber = '02';
+    clientCert.validity.notBefore = new Date();
+    clientCert.validity.notAfter = expiresAt;
+
+    clientCert.setSubject([
+      { name: 'commonName', value: commonName },
+      { shortName: 'OU', value: workspaceUid },
+      { name: 'organizationName', value: 'SaaS Data Platform' },
+    ]);
+    clientCert.setIssuer(caAttrs);
+    clientCert.setExtensions([
+      { name: 'basicConstraints', cA: false },
+      { name: 'keyUsage', digitalSignature: true, keyEncipherment: true },
+      { name: 'extKeyUsage', clientAuth: true },
+    ]);
+    clientCert.sign(caKeys.privateKey, forge.md.sha256.create());
+
+    const clientCertPem = forge.pki.certificateToPem(clientCert);
+    const { serialNumber, fingerprint } = extractCertMetadata(clientCertPem);
+
+    logger.info({ agentUid, workspaceUid, commonName, expiresAt, serialNumber }, 'Issued self-signed mTLS certificate');
+
+    return {
+      caCert: forge.pki.certificateToPem(caCert),
+      clientCert: clientCertPem,
+      clientKey: forge.pki.privateKeyToPem(clientKeys.privateKey),
+      expiresAt,
+      certSerialNumber: serialNumber,
+      certFingerprint: fingerprint,
+      caProvider: 'self-signed',
+    };
+  }
+}
+
+// =============================================================================
+// Provider 2: Step CA (HTTP API)
+// =============================================================================
+
+/**
+ * Step CA Provider
+ *
+ * Issues certificates via Step CA's HTTP API using JWK provisioner.
+ *
+ * PKI Structure:
+ *   Root CA → Intermediate CA → Agent Cert (leaf)
+ *
+ * Config (from config.ca when provider is 'step-ca'):
+ * - url: Step CA server URL
+ * - rootCertPath: Path to root CA cert (for TLS trust)
+ * - intermediateCertPath: Path to intermediate CA cert (for verification)
+ * - provisioner: Provisioner name
+ * - jwkPrivateKey: Decrypted JWK private key JSON
+ * - validityDays: Certificate validity in days
+ *
+ * To get JWK key:
+ *   cat docker/step-ca/secrets/password | step crypto jwe decrypt \
+ *     --key=docker/step-ca/config/ca.json --password-file=/dev/stdin
  */
 class StepCaProvider implements CertProvider {
   private stepCaUrl: string;
   private stepCaHost: string;
   private stepCaPort: number;
   private stepProvisioner: string;
-  private jwtSigningKey: string;
-  private rootCaPath: string;
-  private caCertPem!: string;
-  private caCert!: forge.pki.Certificate;
+  private validityDays: number;
+  private jwtSigningKey!: crypto.KeyObject;
+  private jwtSigningKid!: string;
+  private rootCaPem!: string;
+  private intermediateCaPem!: string;
 
-  constructor() {
-    this.stepCaUrl = process.env.STEP_CA_URL || 'https://ca.saas.internal:9000';
+  constructor(caConfig: StepCaCaConfig) {
+    this.stepCaUrl = caConfig.url;
     const url = new URL(this.stepCaUrl);
     this.stepCaHost = url.hostname;
     this.stepCaPort = parseInt(url.port) || 443;
-    this.stepProvisioner = process.env.STEP_CA_PROVISIONER || 'saas-control-plane';
-    this.jwtSigningKey = process.env.STEP_CA_JWT_SIGNING_KEY!;
-    this.rootCaPath = process.env.STEP_CA_ROOT || '/etc/step-ca/certs/root_ca.crt';
+    this.stepProvisioner = caConfig.provisioner;
+    this.validityDays = caConfig.validityDays;
 
-    this.loadCaCertificate();
+    this.loadSigningKey(caConfig.jwkPrivateKey);
+    this.loadCaCertificates(caConfig.rootCertPath, caConfig.intermediateCertPath);
   }
 
-  private loadCaCertificate(): void {
-    try {
-      this.caCertPem = fs.readFileSync(this.rootCaPath, 'utf8');
-      this.caCert = forge.pki.certificateFromPem(this.caCertPem);
-      logger.info({ caPath: this.rootCaPath }, 'Loaded Step CA root certificate');
-    } catch (error) {
-      logger.error({ error, caPath: this.rootCaPath }, 'Failed to load Step CA root certificate');
-      throw new Error(`Failed to load CA certificate from ${this.rootCaPath}`);
+  private loadSigningKey(jwkPrivateKey: string): void {
+    if (!jwkPrivateKey) {
+      throw new Error('Step CA JWK private key not configured (STEP_CA_JWK_PRIVATE_KEY)');
     }
+    const jwk = JSON.parse(jwkPrivateKey);
+
+    this.jwtSigningKey = crypto.createPrivateKey({ key: jwk, format: 'jwk' });
+    this.jwtSigningKid = jwk.kid;
+    logger.info({ kid: this.jwtSigningKid, provisioner: this.stepProvisioner }, 'Loaded Step CA provisioner key');
   }
 
-  /**
-   * Generate a CSR using node-forge
-   */
+  private loadCaCertificates(rootCertPath: string, intermediateCertPath: string): void {
+    const rootPath = path.resolve(rootCertPath);
+    const intermediatePath = path.resolve(intermediateCertPath);
+
+    this.rootCaPem = fs.readFileSync(rootPath, 'utf8');
+    this.intermediateCaPem = fs.readFileSync(intermediatePath, 'utf8');
+
+    logger.info({ rootPath, intermediatePath }, 'Loaded Step CA certificates');
+  }
+
   private generateCsr(commonName: string, workspaceUid: string): { csr: string; privateKey: string } {
     const keys = forge.pki.rsa.generateKeyPair(2048);
     const csr = forge.pki.createCertificationRequest();
@@ -79,20 +230,10 @@ class StepCaProvider implements CertProvider {
       { shortName: 'OU', value: workspaceUid },
       { name: 'organizationName', value: 'SaaS Data Platform' },
     ]);
-
-    // Add SAN extension
-    csr.setAttributes([
-      {
-        name: 'extensionRequest',
-        extensions: [
-          {
-            name: 'subjectAltName',
-            altNames: [{ type: 2, value: commonName }], // DNS type
-          },
-        ],
-      },
-    ]);
-
+    csr.setAttributes([{
+      name: 'extensionRequest',
+      extensions: [{ name: 'subjectAltName', altNames: [{ type: 2, value: commonName }] }],
+    }]);
     csr.sign(keys.privateKey, forge.md.sha256.create());
 
     return {
@@ -101,95 +242,57 @@ class StepCaProvider implements CertProvider {
     };
   }
 
-  /**
-   * Create a JWK provisioner token for Step CA
-   */
   private createProvisionerToken(commonName: string, csrPem: string): string {
-    // Compute SHA256 of CSR (DER encoded)
     const csrDer = forge.util.decode64(
-      csrPem
-        .replace(/-----BEGIN CERTIFICATE REQUEST-----/, '')
+      csrPem.replace(/-----BEGIN CERTIFICATE REQUEST-----/, '')
         .replace(/-----END CERTIFICATE REQUEST-----/, '')
         .replace(/\s/g, '')
     );
     const sha256 = crypto.createHash('sha256').update(Buffer.from(csrDer, 'binary')).digest('base64url');
 
-    const token = sign(
-      {
-        sha: sha256,
-        sans: [commonName],
-        step: {
-          ra: {
-            provisioner: this.stepProvisioner,
-          },
-        },
-      },
+    return sign(
+      { sha: sha256, sans: [commonName] },
       this.jwtSigningKey,
       {
-        algorithm: 'HS256',
+        algorithm: 'ES256',
         subject: commonName,
         issuer: this.stepProvisioner,
         audience: `${this.stepCaUrl}/1.0/sign`,
         expiresIn: '5m',
         jwtid: randomUUID(),
+        keyid: this.jwtSigningKid,
       }
     );
-
-    return token;
   }
 
-  /**
-   * Call Step CA /1.0/sign endpoint
-   */
   private async signCsr(csrPem: string, token: string, validityDays: number): Promise<string> {
     const notAfter = new Date();
     notAfter.setDate(notAfter.getDate() + validityDays);
 
-    const requestBody = JSON.stringify({
-      csr: csrPem,
-      ott: token,
-      notAfter: notAfter.toISOString(),
-    });
+    const body = JSON.stringify({ csr: csrPem, ott: token, notAfter: notAfter.toISOString() });
 
     return new Promise((resolve, reject) => {
-      const req = https.request(
-        {
-          hostname: this.stepCaHost,
-          port: this.stepCaPort,
-          path: '/1.0/sign',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(requestBody),
-          },
-          ca: this.caCertPem, // Trust the Step CA root
-          rejectUnauthorized: true,
-        },
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => (data += chunk));
-          res.on('end', () => {
-            if (res.statusCode !== 200 && res.statusCode !== 201) {
-              logger.error({ statusCode: res.statusCode, body: data }, 'Step CA sign request failed');
-              reject(new Error(`Step CA returned ${res.statusCode}: ${data}`));
-              return;
-            }
-            try {
-              const response = JSON.parse(data);
-              resolve(response.crt);
-            } catch (e) {
-              reject(new Error(`Failed to parse Step CA response: ${data}`));
-            }
-          });
-        }
-      );
-
-      req.on('error', (e) => {
-        logger.error({ error: e }, 'Step CA request error');
-        reject(e);
+      const req = https.request({
+        hostname: this.stepCaHost,
+        port: this.stepCaPort,
+        path: '/1.0/sign',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        ca: this.rootCaPem,
+        rejectUnauthorized: true,
+      }, (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          if (res.statusCode !== 200 && res.statusCode !== 201) {
+            reject(new Error(`Step CA returned ${res.statusCode}: ${data}`));
+            return;
+          }
+          resolve(JSON.parse(data).crt);
+        });
       });
-
-      req.write(requestBody);
+      req.on('error', reject);
+      req.write(body);
       req.end();
     });
   }
@@ -199,140 +302,112 @@ class StepCaProvider implements CertProvider {
     metadata: { agentUid: string; workspaceUid: string }
   ): Promise<AgentMTLSCredentials> {
     const { agentUid, workspaceUid } = metadata;
-    const certValidityDays = 90;
 
-    // Generate CSR and private key
     const { csr, privateKey } = this.generateCsr(commonName, workspaceUid);
-
-    // Create provisioner token
     const token = this.createProvisionerToken(commonName, csr);
+    const clientCert = await this.signCsr(csr, token, this.validityDays);
 
-    // Sign the CSR via Step CA API
-    const clientCert = await this.signCsr(csr, token, certValidityDays);
+    const { serialNumber, fingerprint } = extractCertMetadata(clientCert);
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + certValidityDays);
+    expiresAt.setDate(expiresAt.getDate() + this.validityDays);
 
-    logger.info({ agentUid, workspaceUid, commonName }, 'Issued mTLS certificate via Step CA');
+    logger.info({ agentUid, workspaceUid, commonName, expiresAt, serialNumber }, 'Issued mTLS certificate via Step CA');
 
+    // Note: caCert IS included in response for agent to use, but NOT stored per-agent in DB
+    // (it's the same shared root CA for all agents)
     return {
       clientCert,
       clientKey: privateKey,
-      caCert: this.caCertPem,
+      caCert: this.intermediateCaPem, // Shared root CA - included in response, not stored per-agent
       expiresAt,
+      certSerialNumber: serialNumber,
+      certFingerprint: fingerprint,
+      caProvider: 'step-ca',
     };
   }
 
-  verifyCertificate(certPem: string): CertVerificationResult {
-    try {
-      const cert = forge.pki.certificateFromPem(certPem);
-
-      // Verify certificate chain against CA
-      const caStore = forge.pki.createCaStore([this.caCert]);
-      const verified = forge.pki.verifyCertificateChain(caStore, [cert]);
-
-      if (!verified) {
-        logger.debug('Certificate chain verification failed');
-        return { valid: false };
-      }
-
-      // Check expiration
-      const now = new Date();
-      if (now < cert.validity.notBefore || now > cert.validity.notAfter) {
-        logger.debug({ notBefore: cert.validity.notBefore, notAfter: cert.validity.notAfter }, 'Certificate expired');
-        return { valid: false };
-      }
-
-      // Extract identity from CN (format: agent-{agentUid})
-      const cn = cert.subject.getField('CN')?.value as string;
-      const agentId = cn?.replace('agent-', '');
-
-      // Extract workspace from OU if present
-      const ou = cert.subject.getField('OU')?.value as string;
-
-      return {
-        valid: true,
-        agentId,
-        workspaceId: ou,
-        expiresAt: cert.validity.notAfter,
-      };
-    } catch (error) {
-      logger.error({ error }, 'Certificate verification error');
-      return { valid: false };
-    }
-  }
-
   getCaCertificate(): string {
-    return this.caCertPem;
+    return this.rootCaPem;
   }
 }
 
-/**
- * AWS Private CA provider (placeholder for production migration)
- *
- * To migrate to AWS PCA:
- * 1. Install @aws-sdk/client-acm-pca
- * 2. Implement this class
- * 3. Set CA_PROVIDER=aws-pca environment variable
- *
- * Example implementation sketch:
- *
- * class AwsPcaProvider implements CertProvider {
- *   private pcaArn: string;
- *   private acmPcaClient: ACMPCAClient;
- *
- *   constructor() {
- *     this.pcaArn = process.env.AWS_PCA_ARN!;
- *     this.acmPcaClient = new ACMPCAClient({ region: process.env.AWS_REGION });
- *   }
- *
- *   async issueCertificate(commonName: string, metadata) {
- *     // 1. Generate CSR locally (same as StepCaProvider)
- *     // 2. Use IssueCertificateCommand to submit CSR
- *     // 3. Use GetCertificateCommand to retrieve signed cert
- *   }
- *
- *   verifyCertificate(certPem: string) {
- *     // Same forge-based verification, just with AWS PCA root cert
- *   }
- *
- *   getCaCertificate() {
- *     // Use GetCertificateAuthorityCertificateCommand
- *   }
- * }
- */
+// =============================================================================
+// Provider 3: AWS Private CA (Placeholder)
+// =============================================================================
 
 /**
- * Certificate Service - abstracts CA provider for mTLS certificate management
+ * AWS Private CA Provider
+ *
+ * For production deployment on AWS.
+ *
+ * Config (from config.ca when provider is 'aws-pca'):
+ * - caArn: ARN of the Private CA
+ * - caCertPath: Path to CA certificate (or fetch from AWS)
+ * - region: AWS region
+ * - validityDays: Certificate validity in days
+ *
+ * Implementation requires @aws-sdk/client-acm-pca:
+ * - IssueCertificateCommand to submit CSR
+ * - GetCertificateCommand to retrieve signed cert
+ * - GetCertificateAuthorityCertificateCommand for CA cert
+ */
+class AwsPcaProvider implements CertProvider {
+  constructor(_caConfig: AwsPcaCaConfig) {
+    // TODO: Implement when migrating to AWS
+    throw new Error('AWS PCA provider not implemented yet');
+  }
+
+  async issueCertificate(): Promise<AgentMTLSCredentials> {
+    throw new Error('Not implemented');
+  }
+}
+
+// =============================================================================
+// Certificate Service
+// =============================================================================
+
+/**
+ * Certificate Service
+ *
+ * Main entry point. Selects provider based on config.ca.provider.
+ *
+ * Usage:
+ *   const certService = new CertService();
+ *   const creds = await certService.issueAgentCertificate(agentUid, workspaceUid);
  */
 export class CertService {
   private provider: CertProvider;
 
-  constructor(provider?: CertProvider) {
-    // Default to Step CA, can be overridden for AWS PCA in production
-    // Future: use CA_PROVIDER env var to select provider
-    this.provider = provider || new StepCaProvider();
+  constructor(provider?: CertProvider, caConfig?: CaConfig) {
+    if (provider) {
+      this.provider = provider;
+    } else {
+      const cfg = caConfig || config.ca;
+
+      switch (cfg.provider) {
+        case 'step-ca':
+          this.provider = new StepCaProvider(cfg);
+          break;
+        case 'aws-pca':
+          this.provider = new AwsPcaProvider(cfg);
+          break;
+        case 'self-signed':
+        default:
+          this.provider = new SelfSignedProvider(cfg as SelfSignedCaConfig);
+          break;
+      }
+
+      logger.info({ provider: cfg.provider }, 'Initialized certificate service');
+    }
   }
 
-  /**
-   * Issue mTLS certificate for an agent
-   */
   async issueAgentCertificate(agentUid: string, workspaceUid: string): Promise<AgentMTLSCredentials> {
     const commonName = `agent-${agentUid}`;
     return this.provider.issueCertificate(commonName, { agentUid, workspaceUid });
   }
 
-  /**
-   * Verify a client certificate
-   */
-  verifyCertificate(certPem: string): CertVerificationResult {
-    return this.provider.verifyCertificate(certPem);
-  }
-
-  /**
-   * Get the CA certificate for trust store configuration
-   */
-  getCaCertificate(): string {
-    return this.provider.getCaCertificate();
+  getCaCertificate(): string | undefined {
+    return this.provider.getCaCertificate?.();
   }
 }

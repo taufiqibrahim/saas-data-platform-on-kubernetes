@@ -513,7 +513,18 @@ model WorkspaceClusterAgentMTLSCredential {
   workspaceClusterAgentId         BigInt
   currentForWorkspaceClusterAgent WorkspaceClusterAgent? @relation("CurrentWorkspaceClusterAgentMTLSCredential")
 
-  caCert    String   @db.Text // CA certificate in PEM format for verifying agent connections
+  // CA provider type used to issue this certificate
+  caProvider String @default("self-signed") // "self-signed" | "step-ca" | "aws-pca"
+
+  // CA certificate - required for self-signed (unique per workspace), optional for step-ca/aws-pca (shared CA)
+  caCert String? @db.Text
+
+  // Certificate serial number for tracking/revocation (hex string)
+  certSerialNumber String?
+
+  // Certificate fingerprint (SHA-256 hash of DER-encoded cert)
+  certFingerprint String?
+
   createdAt DateTime @default(now())
   expiresAt DateTime // Certificate expiration date
 

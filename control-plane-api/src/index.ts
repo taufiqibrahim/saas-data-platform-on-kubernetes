@@ -2,7 +2,9 @@ import dotenv from 'dotenv';
 
 const env = dotenv.config();
 
-import http from 'http';
+import fs from 'fs';
+// import http from 'http';
+import https from 'https';
 import prexit from 'prexit';
 
 // import redisClient from './clients/redis.client';
@@ -26,29 +28,44 @@ import config from '@/config/config';
 
 import app from './app';
 
-const server = http.createServer(app);
+const httpsOptions = {
+  // Server certificate
+  key: fs.readFileSync(config.app.serverKeyPath),
+  cert: fs.readFileSync(config.app.serverCertPath),
+
+  // CA certificate to verify client certificates
+  ca: fs.readFileSync(config.app.serverCACertPath),
+
+  // Request client certificate but don't reject if missing
+  // (we'll check in middleware for specific routes)
+  requestCert: true,
+  rejectUnauthorized: false  // Handle rejection in middleware
+};
+
+// const server = http.createServer(app);
+const server = https.createServer(httpsOptions, app);
 
 server.listen(config.app.listenPort);
 
-const welcomeMessage = `
+// const welcomeMessage = `
 
-********************************************************************
-🛰️   SaaS Control Plane
---------------------------------------------------------------------
-📦  Environment   : ${process.env.NODE_ENV || 'development'}
-🔧  Log Level     : ${process.env.LOG_LEVEL || 'info'}
-🔧  HTTP logging  : ${process.env.HTTP_LOGGING_ENABLED || 'false'}
-🌐  Listening on  : ${config.app.baseUrl}
-🛡️   CORS options:
-        Enabled         : ${config.cors.enabled}
-        Allowed headers : ${config.cors.allowedHeaders}
-        Exposed headers : ${config.cors.exposedHeaders}
-        Origins         : ${config.cors.origin}
-        Methods         : ${config.cors.methods}
+// ********************************************************************
+// 🛰️   SaaS Control Plane
+// --------------------------------------------------------------------
+// 📦  Environment   : ${process.env.NODE_ENV || 'development'}
+// 🔧  Log Level     : ${process.env.LOG_LEVEL || 'info'}
+// 🔧  HTTP logging  : ${process.env.HTTP_LOGGING_ENABLED || 'false'}
+// 🌐  Listening on  : ${config.app.baseUrl}
+// 🛡️   CORS options:
+//         Enabled         : ${config.cors.enabled}
+//         Allowed headers : ${config.cors.allowedHeaders}
+//         Exposed headers : ${config.cors.exposedHeaders}
+//         Origins         : ${config.cors.origin}
+//         Methods         : ${config.cors.methods}
 
-📅  Started at    : ${new Date().toLocaleString()}
-********************************************************************
-`;
+// 📅  Started at    : ${new Date().toLocaleString()}
+// ********************************************************************
+// `;
 // logger.info(welcomeMessage);
 logger.info(`HTTP server listening on ${config.app.baseUrl}`);
 

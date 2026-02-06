@@ -13,7 +13,7 @@ import logger from '@/config/logger';
 import { offsetPagination } from '@/utils/api';
 
 import { workspaceSelect } from './workspace.select';
-import { AgentRegisterRequest, AgentRegisterResponse, GenerateBootstrapTokenParams, GenerateBootstrapTokenResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceResponse } from './workspace.type';
+import { AgentRegisterRequest, AgentRegisterResponse, AgentSyncParams, AgentSyncResponse, GenerateBootstrapTokenParams, GenerateBootstrapTokenResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceResponse } from './workspace.type';
 import { checkPermission } from '@/middlewares/authorization.middleware';
 import { generateWorkspaceId } from '@/utils/idGenerator';
 import { createdByPrincipalSelect } from '../principal/principal.select';
@@ -1172,11 +1172,14 @@ export async function registerWorkspaceClusterAgent({
 
   // Store mTLS credential and update agent in a transaction
   await prisma.$transaction(async (tx) => {
-    // Create mTLS credential record to store the CA cert for server-side verification
+    // Create mTLS credential record for tracking/verification
     const mtlsCredential = await tx.workspaceClusterAgentMTLSCredential.create({
       data: {
         workspaceClusterAgentId: agent.id,
-        caCert: mtls.caCert,
+        caProvider: mtls.caProvider || 'self-signed',
+        caCert: mtls.caCert, // Only stored for self-signed (per-workspace CA)
+        certSerialNumber: mtls.certSerialNumber,
+        certFingerprint: mtls.certFingerprint,
         expiresAt: mtls.expiresAt,
       },
     });
@@ -1199,5 +1202,71 @@ export async function registerWorkspaceClusterAgent({
     workspaceUid: workspace.uid,
     extWorkspaceId: workspace.extWorkspaceId,
     mtls,
+  };
+}
+
+/******************************************************************************
+ * Agent sync - poll config and update telemetry
+ *****************************************************************************/
+export async function syncAgent({
+  agentUid,
+  data,
+}: AgentSyncParams): Promise<AgentSyncResponse> {
+  // Find the agent by UID
+  const agent = await prisma.workspaceClusterAgent.findUnique({
+    where: { uid: agentUid },
+    include: {
+      workspace: true,
+    },
+  });
+
+  if (!agent) {
+    throw new HttpError(404, 'Agent not found');
+  }
+
+  if (agent.status === 'Deleted') {
+    throw new HttpError(410, 'Agent has been deleted');
+  }
+
+  if (agent.status === 'Suspended') {
+    throw new HttpError(403, 'Agent is suspended');
+  }
+
+  if (agent.status === 'PendingRegistration') {
+    throw new HttpError(403, 'Agent is not yet registered');
+  }
+
+  // Update lastPingAt and optionally store telemetry
+  await prisma.workspaceClusterAgent.update({
+    where: { id: agent.id },
+    data: {
+      lastPingAt: new Date(),
+      // Future: store telemetry data (agentVersion, kubernetesVersion, etc.)
+    },
+  });
+
+  const workspace = agent.workspace;
+
+  logger.debug(
+    {
+      agentUid,
+      workspaceUid: workspace.uid,
+      agentVersion: data.agentVersion,
+      kubernetesVersion: data.kubernetesVersion,
+    },
+    'Agent sync'
+  );
+
+  return {
+    agentUid: agent.uid,
+    workspace: {
+      uid: workspace.uid,
+      extWorkspaceId: workspace.extWorkspaceId,
+      name: workspace.name,
+      status: workspace.status,
+      metadata: (workspace.metadata as Record<string, unknown>) || {},
+    },
+    serverTime: new Date(),
+    syncIntervalSeconds: 30, // Recommend 30s polling interval
   };
 }
