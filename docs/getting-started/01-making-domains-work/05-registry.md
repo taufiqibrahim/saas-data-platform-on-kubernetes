@@ -17,4 +17,9 @@ crane --insecure copy ghcr.io/cloudnative-pg/postgresql:18.1-system-trixie zot.s
 crane --insecure copy quay.io/jupyterhub/k8s-singleuser-sample:4.3.2 zot.saas.internal/jupyterhub/k8s-singleuser-sample:4.3.2
 crane --insecure copy quay.io/jupyterhub/k8s-hub:4.3.2 zot.saas.internal/jupyterhub/k8s-hub:4.3.2
 crane --insecure copy docker.io/hashicorp/vault:1.21.2 zot.saas.internal/hashicorp/vault:1.21.2
+crane --insecure copy registry.k8s.io/ingress-nginx/controller:v1.14.2 zot.saas.internal/ingress-nginx/controller:v1.14.2
+crane --insecure copy registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.6.6 zot.saas.internal/ingress-nginx/kube-webhook-certgen:v1.6.6
+
+crane --insecure copy quay.io/argoproj/argocd:v3.2.6 zot.saas.internal/argoproj/argocd:v3.2.6
+
 ```

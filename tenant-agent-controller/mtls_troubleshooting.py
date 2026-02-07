@@ -67,7 +67,7 @@ client = httpx.Client(transport=transport)
 
 resp = client.post(
     f"https://{HOST}/api/v1/agent/sync",
-    data={"status": "ok", "agent": "test"},
+    json={"status": "ok", "agent": "test"},
 )
 
 print(resp.status_code, resp.text)
