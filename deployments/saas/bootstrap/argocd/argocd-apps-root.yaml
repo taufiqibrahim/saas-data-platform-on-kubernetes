@@ -14,7 +14,7 @@ spec:
   source:
     repoURL: https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes.git
     targetRevision: main
-    path: deployments/saas/gitops/argocd-apps
+    path: deployments/saas/gitops/argocd-apps/
     helm:
       valueFiles:
         - values.yaml
