@@ -11,9 +11,9 @@ spec:
   project: default
   sources:
     # Chart from original reference remote repo
-    - repoURL: https://charts.bitnami.com/bitnami
+    - repoURL: oci://registry-1.docker.io/cloudpirates
       chart: keycloak
-      targetRevision: 24.7.5
+      targetRevision: 0.14.3
       helm:
         valueFiles:
           - $values/deployments/saas/gitops/deployments/core/keycloak/values/{{ .Values.global.environment }}.yaml   # this points to the file in our git
