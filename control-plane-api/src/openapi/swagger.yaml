@@ -347,8 +347,59 @@ components:
       additionalProperties: {}
       type: object
       description: Construct a type with a set of properties K of type T
-    WorkspaceConfig:
-      description: Workspace configuration returned to agent
+    WorkspaceAppConfig:
+      description: Workspace app configuration returned to agent
+      properties:
+        uid:
+          type: string
+          description: App unique ID
+        name:
+          type: string
+          description: App name
+        version:
+          type: string
+          description: App version
+        status:
+          type: string
+          description: App status
+        config:
+          items:
+            $ref: "#/components/schemas/Record_string.unknown_"
+          type: array
+          description: App configuration entries
+        parameter:
+          $ref: "#/components/schemas/Record_string.unknown_"
+          description: App parameters
+      required:
+        - uid
+        - name
+        - version
+        - status
+        - config
+        - parameter
+      type: object
+      additionalProperties: false
+    CreatedByRef:
+      description: Created-by user reference
+      properties:
+        uid:
+          type: string
+          description: User unique ID
+        email:
+          type: string
+          description: User email
+        fullName:
+          type: string
+          description: User full name
+      required:
+        - uid
+        - email
+        - fullName
+      type: object
+      additionalProperties: false
+    AgentSyncResponse:
+      description: Response for agent sync endpoint — workspace configuration returned
+        to agent
       properties:
         uid:
           type: string
@@ -359,42 +410,46 @@ components:
         name:
           type: string
           description: Workspace name
+        description:
+          type: string
+          description: Workspace description
         status:
           type: string
           description: Current workspace status
-        metadata:
+        workspaceApps:
+          items:
+            $ref: "#/components/schemas/WorkspaceAppConfig"
+          type: array
+          description: Workspace apps configuration
+        storage:
           $ref: "#/components/schemas/Record_string.unknown_"
-          description: Workspace metadata/configuration
+          description: Storage configuration
+        network:
+          $ref: "#/components/schemas/Record_string.unknown_"
+          description: Network configuration
+        createdAt:
+          type: string
+          format: date-time
+          description: Workspace creation timestamp
+        createdBy:
+          $ref: "#/components/schemas/CreatedByRef"
+          description: User who created the workspace
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
         - uid
         - extWorkspaceId
         - name
+        - description
         - status
-        - metadata
-      type: object
-      additionalProperties: false
-    AgentSyncResponse:
-      description: Response for agent sync endpoint
-      properties:
-        agentUid:
-          type: string
-          description: Agent unique ID
-        workspace:
-          $ref: "#/components/schemas/WorkspaceConfig"
-          description: Workspace configuration
-        serverTime:
-          type: string
-          format: date-time
-          description: Server timestamp for sync
-        syncIntervalSeconds:
-          type: number
-          format: double
-          description: Recommended interval until next sync (seconds)
-      required:
-        - agentUid
-        - workspace
-        - serverTime
-        - syncIntervalSeconds
+        - workspaceApps
+        - storage
+        - network
+        - createdAt
+        - createdBy
+        - updatedAt
       type: object
       additionalProperties: false
     AgentStatusReport:

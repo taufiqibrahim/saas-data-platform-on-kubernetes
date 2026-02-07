@@ -55,9 +55,24 @@ docs.saas.internal {
 	}
 }
 
-api.saas.internal {
-	respond "HTTPS OK api.saas.internal"
-	tls internal
+apidev.saas.internal {
+	reverse_proxy host.docker.internal:5001 {
+		# Pass client certificate subject as header to Express
+		header_up ssl-client-subject-dn {http.request.tls.client.subject}
+	}
+	tls {
+		issuer acme {
+			dir https://ca.saas.internal:9000/acme/acme/directory
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+		client_auth {
+			# Caddy verifies client cert if presented; no cert = allowed through
+			mode verify_if_given
+			trust_pool file {
+				pem_file /step-ca-certs/root_ca.crt /step-ca-certs/intermediate_ca.crt
+			}
+		}
+	}
 }
 
 ui.saas.internal {

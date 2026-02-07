@@ -405,9 +405,57 @@ export interface AgentSyncRequest {
 }
 
 /**
- * Workspace configuration returned to agent
+ * Workspace app configuration returned to agent
  */
-export interface WorkspaceConfig {
+export interface WorkspaceAppConfig {
+  /**
+   * App unique ID
+   */
+  uid: string;
+  /**
+   * App name
+   */
+  name: string;
+  /**
+   * App version
+   */
+  version: string;
+  /**
+   * App status
+   */
+  status: string;
+  /**
+   * App configuration entries
+   */
+  config: Record<string, unknown>[];
+  /**
+   * App parameters
+   */
+  parameter: Record<string, unknown>;
+}
+
+/**
+ * Created-by user reference
+ */
+export interface CreatedByRef {
+  /**
+   * User unique ID
+   */
+  uid: string;
+  /**
+   * User email
+   */
+  email: string;
+  /**
+   * User full name
+   */
+  fullName: string;
+}
+
+/**
+ * Response for agent sync endpoint — workspace configuration returned to agent
+ */
+export interface AgentSyncResponse {
   /**
    * Workspace unique ID
    */
@@ -421,35 +469,37 @@ export interface WorkspaceConfig {
    */
   name: string;
   /**
+   * Workspace description
+   */
+  description: string;
+  /**
    * Current workspace status
    */
   status: string;
   /**
-   * Workspace metadata/configuration
+   * Workspace apps configuration
    */
-  metadata: Record<string, unknown>;
-}
-
-/**
- * Response for agent sync endpoint
- */
-export interface AgentSyncResponse {
+  workspaceApps: WorkspaceAppConfig[];
   /**
-   * Agent unique ID
+   * Storage configuration
    */
-  agentUid: string;
+  storage: Record<string, unknown>;
   /**
-   * Workspace configuration
+   * Network configuration
    */
-  workspace: WorkspaceConfig;
+  network: Record<string, unknown>;
   /**
-   * Server timestamp for sync
+   * Workspace creation timestamp
    */
-  serverTime: Date;
+  createdAt: Date;
   /**
-   * Recommended interval until next sync (seconds)
+   * User who created the workspace
    */
-  syncIntervalSeconds: number;
+  createdBy: CreatedByRef;
+  /**
+   * Last update timestamp
+   */
+  updatedAt: Date;
 }
 
 /**

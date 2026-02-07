@@ -288,7 +288,9 @@ class StepCaProvider implements CertProvider {
             reject(new Error(`Step CA returned ${res.statusCode}: ${data}`));
             return;
           }
-          resolve(JSON.parse(data).crt);
+          const parsed = JSON.parse(data);
+          // Include intermediate cert so the client presents the full chain
+          resolve(parsed.ca ? parsed.crt + '\n' + parsed.ca : parsed.crt);
         });
       });
       req.on('error', reject);
@@ -319,7 +321,7 @@ class StepCaProvider implements CertProvider {
     return {
       clientCert,
       clientKey: privateKey,
-      caCert: this.intermediateCaPem, // Shared root CA - included in response, not stored per-agent
+      caCert: this.rootCaPem, // Shared root CA - included in response, not stored per-agent
       expiresAt,
       certSerialNumber: serialNumber,
       certFingerprint: fingerprint,

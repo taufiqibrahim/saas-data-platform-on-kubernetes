@@ -1257,15 +1257,20 @@ export async function syncAgent({
   );
 
   return {
-    agentUid: agent.uid,
-    workspace: {
-      uid: workspace.uid,
-      extWorkspaceId: workspace.extWorkspaceId,
-      name: workspace.name,
-      status: workspace.status,
-      metadata: (workspace.metadata as Record<string, unknown>) || {},
+    uid: workspace.uid,
+    extWorkspaceId: workspace.extWorkspaceId,
+    name: workspace.name,
+    description: workspace.description ?? '',
+    status: workspace.status,
+    workspaceApps: [], // TODO: populate from workspace apps
+    storage: {},       // TODO: populate from workspace storage config
+    network: {},       // TODO: populate from workspace network config
+    createdAt: workspace.createdAt,
+    createdBy: {
+      uid: '',         // TODO: resolve from workspace creator
+      email: '',
+      fullName: '',
     },
-    serverTime: new Date(),
-    syncIntervalSeconds: 30, // Recommend 30s polling interval
+    updatedAt: workspace.updatedAt,
   };
 }

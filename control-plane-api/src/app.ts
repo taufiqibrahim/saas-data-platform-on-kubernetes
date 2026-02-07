@@ -19,6 +19,9 @@ import { generateBootstrapYAML } from './domains/agent/agent.service';
 
 const app = express();
 
+// Trust reverse proxy (Caddy / nginx ingress) for forwarded headers
+app.set('trust proxy', true);
+
 app.use(compression());
 app.use(express.json({ limit: config.app.jsonLimit }));
 app.use(express.urlencoded({ extended: true }));

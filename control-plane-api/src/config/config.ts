@@ -143,9 +143,6 @@ export interface AppConfig {
   nodeEnv: string;
   baseProtocol: string;
   baseDomain: string;
-  serverCACertPath: string;
-  serverKeyPath: string;
-  serverCertPath: string;
 }
 
 export interface Config {
@@ -304,10 +301,7 @@ const listenPort = Number(process.env.LISTEN_PORT) || 5001;
 
 const appConfig: AppConfig = {
   name: process.env.APP_NAME || 'Local SaaS',
-  baseUrl: process.env.BASE_URL || `https://localhost:${listenPort}`,
-  serverCACertPath: process.env.SERVER_CA_CERT_PATH || './etc/certs/server/root_ca.crt',
-  serverCertPath: process.env.SERVER_CERT_PATH || './etc/certs/server/server.crt',
-  serverKeyPath: process.env.SERVER_KEY_PATH || './etc/certs/server/server.key',
+  baseUrl: process.env.BASE_URL || `http://localhost:${listenPort}`,
   listenPort: listenPort,
   logLevel: process.env.LOG_LEVEL || 'info',
   jsonLimit: process.env.JSON_LIMIT || '10mb',

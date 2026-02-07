@@ -29,45 +29,39 @@ Create a `.env` file based on `.env.example`.
 docker compose up -d
 ```
 
-### Generate Server Certificate
-Assume Step CA is already running
-```bash
-export STEP_CA_URL="https://ca.saas.internal:9000"
-export STEP_CA_ROOT="../docker/step-ca/certs/root_ca.crt"
-export STEP_CA_PASSWORD_FILE="../docker/step-ca/secrets/password"
+### TLS & mTLS Architecture
+
+Express serves **plain HTTP**. TLS and mTLS are handled by the reverse proxy:
+
+- **Local dev**: Caddy (in docker-compose) terminates TLS, verifies agent client certs, and forwards identity via headers
+- **Kubernetes**: nginx ingress does the same
+
+```
+Agent ──mTLS──▶ Reverse Proxy ──HTTP──▶ Express (reads headers)
+                (Caddy / nginx)
 ```
 
-Generate server certificate for Express
-```bash
-step ca certificate \
-  "saas.internal" \
-  ./certs/server.crt \
-  ./certs/server.key \
-  --ca-url ${STEP_CA_URL} \
-  --root ${STEP_CA_ROOT} \
-  --san cp.saas.internal \
-  --san localhost \
-  --san 127.0.0.1 \
-  --provisioner admin \
-  --password-file=${STEP_CA_PASSWORD_FILE} \
-  --not-after 8760h
-```
+The API still **issues** agent certificates via Step CA during registration (`CertService`).
+It just no longer terminates TLS or verifies certs itself.
 
-### Prepare CA Related .env values
+#### Prepare CA Issuer .env values
+
+The `STEP_CA_*` variables are used by `CertService` to issue agent mTLS certificates.
+
 Get the value for `STEP_CA_JWK_PRIVATE_KEY`:
 ```bash
 jq -r '.authority.provisioners[0].encryptedKey' ../docker/step-ca/config/ca.json | \
   step crypto jwe decrypt --password-file=../docker/step-ca/secrets/password
 ```
 
-Make sure all of this populated on `.env`
+Add to `.env`:
 ```bash
 CA_PROVIDER=step-ca
 STEP_CA_URL=https://ca.saas.internal:9000
 STEP_CA_ROOT=../docker/step-ca/certs/root_ca.crt
 STEP_CA_INTERMEDIATE=../docker/step-ca/certs/intermediate_ca.crt
 STEP_CA_PROVISIONER=admin
-STEP_CA_JWK_PRIVATE_KEY=result of jq -r '.authority.provisioners[0].encryptedKey'...
+STEP_CA_JWK_PRIVATE_KEY=<result of jq command above>
 ```
 
 ### Development

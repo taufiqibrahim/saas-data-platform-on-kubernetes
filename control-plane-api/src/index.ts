@@ -2,9 +2,7 @@ import dotenv from 'dotenv';
 
 const env = dotenv.config();
 
-import fs from 'fs';
-// import http from 'http';
-import https from 'https';
+import http from 'http';
 import prexit from 'prexit';
 
 // import redisClient from './clients/redis.client';
@@ -28,22 +26,9 @@ import config from '@/config/config';
 
 import app from './app';
 
-const httpsOptions = {
-  // Server certificate
-  key: fs.readFileSync(config.app.serverKeyPath),
-  cert: fs.readFileSync(config.app.serverCertPath),
-
-  // CA certificate to verify client certificates
-  ca: fs.readFileSync(config.app.serverCACertPath),
-
-  // Request client certificate but don't reject if missing
-  // (we'll check in middleware for specific routes)
-  requestCert: true,
-  rejectUnauthorized: false  // Handle rejection in middleware
-};
-
-// const server = http.createServer(app);
-const server = https.createServer(httpsOptions, app);
+// TLS is terminated by the reverse proxy (Caddy for local dev, nginx ingress for K8s).
+// Express serves plain HTTP; mTLS identity is passed via headers.
+const server = http.createServer(app);
 
 server.listen(config.app.listenPort);
 
