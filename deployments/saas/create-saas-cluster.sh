@@ -360,6 +360,9 @@ ensure_external_dns
 ensure_ingress_nginx
 ensure_argocd
 
+# Apply ArgoCD apps
+kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
+
 # ensure_password_generator
 # bootstrap_external_secret_store
 
