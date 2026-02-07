@@ -348,19 +348,19 @@ CLUSTER_NAME=$1
 
 preflight_checks
 create_cluster
-# ensure_helm
+ensure_helm
 
 log_section "Kubernetes Setup"
 kubectl create namespace saas --dry-run=client -o yaml | kubectl apply -f -
 
-# ensure_cert_manager
-# ensure_cluster_issuer
-# ensure_external_secret
-# ensure_external_dns
-# ensure_ingress_nginx
+ensure_cert_manager
+ensure_cluster_issuer
+ensure_external_secret
+ensure_external_dns
+ensure_ingress_nginx
 ensure_argocd
-# ensure_password_generator
 
+# ensure_password_generator
 # bootstrap_external_secret_store
 
 log_section "SaaS Cluster Bootstrap Complete"

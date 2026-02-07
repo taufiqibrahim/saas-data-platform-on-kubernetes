@@ -55,6 +55,7 @@ docs.saas.internal {
 	}
 }
 
+# control-plane-api development server ran using pnpm dev
 apidev.saas.internal {
 	reverse_proxy host.docker.internal:5001 {
 		# Pass client certificate subject as header to Express
@@ -75,8 +76,9 @@ apidev.saas.internal {
 	}
 }
 
-ui.saas.internal {
-	respond "HTTPS OK ui.saas.internal"
+# control-plane-ui development server ran using npm run dev
+uidev.saas.internal {
+	respond "HTTPS OK uidev.saas.internal"
 	tls {
 		issuer acme {
 			# The internal URL of your step-ca container

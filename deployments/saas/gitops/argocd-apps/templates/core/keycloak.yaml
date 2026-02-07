@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: /deployments/core/keycloak
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    # Chart from original reference remote repo
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: keycloak
+      targetRevision: 24.7.5
+      helm:
+        valueFiles:
+          - $values/deployments/saas/gitops/deployments/core/keycloak/values/{{ .Values.global.environment }}.yaml   # this points to the file in our git
+    # Reference values from our git
+    - repoURL: "{{ .Values.infra.source.repoURL }}"
+      targetRevision: "{{ .Values.infra.source.targetRevision }}"
+      ref: values
+  destination:
+    server: {{ .Values.infra.destination.server }}
+    namespace: keycloak
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
