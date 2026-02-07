@@ -8,7 +8,7 @@ import urllib3
 from kubernetes import config
 
 from settings import app_settings
-from workspace import delete_workspace_cr, fetch_workspace, get_workspace_cr
+from workspace import create_workspace_cr, delete_workspace_cr, get_workspace_cr
 from workspace_app import (
     cleanup_workspace_app_resources,
     delete_workspace_app_cr,
@@ -16,8 +16,9 @@ from workspace_app import (
     list_workspace_apps_cr,
     reconcile_workspace_app,
 )
+from agent_client import AgentClient
 from addon_handlers import get_addon
-from helpers import create_kubernetes_event
+from helpers import create_kubernetes_event, install_crds
 
 urllib3.disable_warnings()
 load_dotenv()
@@ -26,6 +27,16 @@ LOCK: asyncio.Lock
 
 # Constants
 WORKSPACE_APPLICATIONS = "workspaceapplications"
+CONTROL_PLANE_BASE_URL = app_settings.control_plane_base_url
+
+CERT_PATH = "/tmp/tenant/certs/client.crt"
+KEY_PATH = "/tmp/tenant/certs/client.key"
+CA_PATH = "/tmp/tenant/certs/ca.crt"
+
+# # Production: mounted from Kubernetes volume
+# CERT_PATH = "/etc/certs/client.crt"
+# KEY_PATH = "/etc/certs/client.key"
+# CA_PATH = "/etc/certs/ca.crt"
 
 # Standard Kubernetes labels
 STANDARD_LABELS = {
@@ -59,6 +70,15 @@ except:
     config.load_kube_config()
 
 
+# Global agent client instance
+agent_client = AgentClient(
+    base_url=CONTROL_PLANE_BASE_URL,
+    cert_path=CERT_PATH,
+    key_path=KEY_PATH,
+    ca_path=CA_PATH,
+)
+
+
 @kopf.on.startup()  # type: ignore
 async def startup_fn(logger, **kwargs):
     global LOCK
@@ -66,12 +86,31 @@ async def startup_fn(logger, **kwargs):
 
 
 @kopf.on.startup()  # type: ignore
-def configure(settings: kopf.OperatorSettings, **_):
+def configure(settings: kopf.OperatorSettings, logger, **_):
     log_level = os.getenv("LOG_LEVEL", "WARNING").upper()
     settings.posting.level = getattr(logging, log_level, logging.WARNING)
     settings.posting.enabled = False
     settings.watching.connect_timeout = 1 * 60
     settings.watching.server_timeout = 10 * 60
+
+    logger.info("Starting SaaS agent")
+    try:
+        # Install CRDs and create workspace resource on first initialization
+        logger.info("Installing CRDs...")
+        install_crds(logger)
+        logger.info("CRDs installed successfully")
+
+        logger.info("Creating Workspace CR...")
+        create_workspace_cr(logger)
+        logger.info("Workspace CR ready")
+
+        agent_client.initialize()
+        logger.info(f"Agent ready for workspace: {WORKSPACE_ID}")
+        logger.info("Successfully connected to control plane")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize agent: {e}")
+        raise
 
 
 @kopf.on.login()  # type: ignore
@@ -120,93 +159,93 @@ async def reconcile_workspace(
     """
     async with LOCK:
         try:
-            print()
+            workspace = agent_client.sync_and_fetch({"xxxx": "true"})
             # Poll workspace to control plane API
-            workspace = fetch_workspace(logger=logger)
+            # workspace = fetch_workspace(logger=logger)
             if not workspace:
                 logger.error("Workspace cant be None")
                 patch.status["phase"] = "ReconciliationError"
                 patch.status["error"] = "Failed to fetch workspace from control plane"
                 return
 
-            # Check existing workspace CR
-            get_workspace_cr(
-                name=WORKSPACE_ID,
-                logger=logger,
-                namespace=app_settings.workload_namespace,
-            )
+            # # Check existing workspace CR
+            # get_workspace_cr(
+            #     name=WORKSPACE_ID,
+            #     logger=logger,
+            #     namespace=app_settings.workload_namespace,
+            # )
 
-            extWorkspaceId = workspace.extWorkspaceId
-            workspace_app_crs = list_workspace_apps_cr(
-                labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID}, logger=logger
-            )
+            # extWorkspaceId = workspace.extWorkspaceId
+            # workspace_app_crs = list_workspace_apps_cr(
+            #     labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID}, logger=logger
+            # )
 
-            # Handle workspace deletion - check for child apps first
-            if workspace.status in ("DELETING"):
-                # Check if any apps still exist using labels
-                workspace_app_crs = list_workspace_apps_cr(
-                    labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID},
-                    logger=logger,
-                )
+            # # Handle workspace deletion - check for child apps first
+            # if workspace.status in ("DELETING"):
+            #     # Check if any apps still exist using labels
+            #     workspace_app_crs = list_workspace_apps_cr(
+            #         labels={f"{WORKSPACE_LABEL_PREFIX}/name": WORKSPACE_ID},
+            #         logger=logger,
+            #     )
 
-                if workspace_app_crs:
-                    logger.warning(
-                        f"Cannot delete workspace {name}: "
-                        f"{len(workspace_app_crs)} apps still exist"
-                    )
-                    patch.status["phase"] = "DeletionBlocked"
-                    patch.status["error"] = (
-                        f"Workspace has {len(workspace_app_crs)} applications "
-                        f"that must be deleted first"
-                    )
-                    return
+            #     if workspace_app_crs:
+            #         logger.warning(
+            #             f"Cannot delete workspace {name}: "
+            #             f"{len(workspace_app_crs)} apps still exist"
+            #         )
+            #         patch.status["phase"] = "DeletionBlocked"
+            #         patch.status["error"] = (
+            #             f"Workspace has {len(workspace_app_crs)} applications "
+            #             f"that must be deleted first"
+            #         )
+            #         return
 
-                # Safe to delete
-                delete_workspace_cr(name=extWorkspaceId, logger=logger)
-                return
+            #     # Safe to delete
+            #     delete_workspace_cr(name=extWorkspaceId, logger=logger)
+            #     return
 
-            # Handle workspace apps
-            desired_apps = [
-                wa for wa in workspace.workspaceApps if wa.status not in ("DELETED")
-            ]
-            app_names = [a.name for a in desired_apps]
-            logger.info(f"Desired apps: {app_names}")
+            # # Handle workspace apps
+            # desired_apps = [
+            #     wa for wa in workspace.workspaceApps if wa.status not in ("DELETED")
+            # ]
+            # app_names = [a.name for a in desired_apps]
+            # logger.info(f"Desired apps: {app_names}")
 
-            for app in desired_apps:
-                app_name = app.name
-                app_namespace = app.namespace
-                app_status = app.status
+            # for app in desired_apps:
+            #     app_name = app.name
+            #     app_namespace = app.namespace
+            #     app_status = app.status
 
-                # Handle workspace app deletion
-                if app_status in ("DELETING"):
-                    await delete_workspace_app_cr(
-                        name=app_name,
-                        logger=logger,
-                        namespace=app_namespace,
-                    )
-                    continue
+            #     # Handle workspace app deletion
+            #     if app_status in ("DELETING"):
+            #         await delete_workspace_app_cr(
+            #             name=app_name,
+            #             logger=logger,
+            #             namespace=app_namespace,
+            #         )
+            #         continue
 
-                if app_status == "DELETED":
-                    logger.warn(f"Workspace app: {app_name} still marked as DELETED")
-                    continue
+            #     if app_status == "DELETED":
+            #         logger.warn(f"Workspace app: {app_name} still marked as DELETED")
+            #         continue
 
-                # Check if workspace app exists (or create it)
-                if app_status == "PROVISIONING":
-                    get_or_create_workspace_app_cr(
-                        name=app_name,
-                        namespace=app_namespace,
-                        # workspace_name=name,  # Parent workspace name
-                        logger=logger,
-                        version=getattr(app, "version", "latest"),
-                        # config=getattr(app, 'config', {})
-                    )
+            #     # Check if workspace app exists (or create it)
+            #     if app_status == "PROVISIONING":
+            #         get_or_create_workspace_app_cr(
+            #             name=app_name,
+            #             namespace=app_namespace,
+            #             # workspace_name=name,  # Parent workspace name
+            #             logger=logger,
+            #             version=getattr(app, "version", "latest"),
+            #             # config=getattr(app, 'config', {})
+            #         )
 
         except Exception as e:
             kopf.exception(body, reason="ReconciliationError", message="")
             logger.error(f"Workspace reconciliation failed: {e}")
             patch.status["phase"] = "ReconciliationError"
-            patch.status["error"] = str(e)
-            raise
+            patch.status["message"] = str(e)
+            # raise
 
 
 WORKSPACE_APP_FINALIZER = f"workspaceapplication.{app_settings.platform_group}/cleanup"

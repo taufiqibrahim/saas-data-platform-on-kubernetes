@@ -87,9 +87,15 @@ nodes:
   - role: worker
     labels:
       NodeGroupType: default
-  # - role: worker
-  #   labels:
-  #     NodeGroupType: database
+  - role: worker
+    labels:
+      NodeGroupType: default
+#   - role: worker
+#     labels:
+#       NodeGroupType: default
+#   - role: worker
+#     labels:
+#       NodeGroupType: database
 EOF
 
 # Adding Zot as trusted registry

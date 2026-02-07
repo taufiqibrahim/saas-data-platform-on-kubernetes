@@ -1,0 +1,62 @@
+# Control Plane API Ingress with mTLS
+#
+# nginx ingress terminates TLS (server cert via cert-manager) and optionally
+# verifies client certificates (agent mTLS) using the CA bundle secret.
+#
+# - auth-tls-verify-client: "optional" — not all routes need mTLS
+# - auth-tls-pass-certificate-to-upstream: "true" — Express reads identity from headers
+# - auth-tls-verify-depth: "2" — Root CA → Intermediate CA → Agent cert
+#
+# The CA secret must contain the concatenated root + intermediate CA PEM.
+# Create it with:
+#   cat root_ca.crt intermediate_ca.crt | base64 -w 0
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: control-plane-mtls-ca
+  namespace: saas-system
+type: Opaque
+data:
+  ca.crt: <base64-encoded root + intermediate CA bundle>
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: control-plane-api
+  namespace: saas-system
+  annotations:
+    # Server TLS cert auto-provisioned by cert-manager
+    cert-manager.io/cluster-issuer: step-ca-acme
+
+    # mTLS: verify client certs against CA bundle
+    nginx.ingress.kubernetes.io/auth-tls-secret: "saas-system/control-plane-mtls-ca"
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "optional"
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "2"
+    nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream: "true"
+
+    # Backend is plain HTTP
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # DNS auto-registration
+    external-dns.alpha.kubernetes.io/hostname: api.saas.internal
+    external-dns.alpha.kubernetes.io/coredns-group: "g-saas"
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.saas.internal
+      secretName: control-plane-api-tls
+  rules:
+    - host: api.saas.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: control-plane-api
+                port:
+                  number: 3000

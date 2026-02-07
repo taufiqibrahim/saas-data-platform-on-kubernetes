@@ -25,6 +25,8 @@ export TENANT_ID=tenant-0
 ## Creating Tenant Cluster
 
 We have prepared a shell script to automate the Kind cluster creation.
+In real production deployment, the tenant cluster already prepared by using cloud-managed Kubernetes cluster through automation, 
+or tenant already have a self-managed cluster. So this Kind cluster only used on our local stack. 
 
 ### What the Script Does
 
@@ -46,13 +48,13 @@ The `create-tenant-cluster.sh` script performs the following steps:
 | `ROOT_CA_PATH` | `./docker/step-ca/certs/root_ca.crt` | Path to the root CA certificate file |
 | `REGISTRY_HOST` | `zot.saas.internal` | Hostname of the trusted container registry |
 
-### Usage
+Usage
 
 ```bash
 ./deployments/tenants/create-tenant-cluster.sh <CLUSTER_NAME>
 ```
 
-### Example
+Example
 
 ```bash
 # Using default settings
@@ -63,6 +65,7 @@ ROOT_CA_PATH=/path/to/your/ca.crt ./deployments/tenants/create-tenant-cluster.sh
 ```
 
 Feel free to experiment with your own Kind configuration by referring to [https://kind.sigs.k8s.io/docs/user/configuration/](https://kind.sigs.k8s.io/docs/user/configuration/).
+The configuration is located in-line on `deployments/tenants/create-tenant-cluster.sh`
 
 ## Interact With The Cluster
 
@@ -100,12 +103,15 @@ export ROOT_CA_PATH=./docker/step-ca/certs/root_ca.crt
 export TENANT_ID=tenant-0
 export TENANT_KEYVAULT_TOKEN=<tenant-token>
 
-./deployments/tenants/bootstrap-tenant-cluster.sh
+./deployments/tenants/bootstrap.sh
 ```
 
 ## SaaS Style: One Liner curl
 
-
+## Delete Tenant Cluster
+```bash
+kind delete cluster --name=tenant-0
+```
 
 ## Troubleshootings
 

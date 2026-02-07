@@ -4,13 +4,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]  # project root
-print(BASE_DIR)
 
 
 class Settings(BaseSettings):
+
     # Controller
     controller_timer_interval: float = 10
-    controller_verify_ca: bool = True
+    ca_path: str
+    cert_path: str = "/etc/certs/client.crt"
+    key_path: str = "/etc/certs/client.key"
+    ca_path: str = "/etc/certs/ca.crt"
 
     # Platform
     platform_group: str = "platform.saas.internal"
@@ -22,8 +25,7 @@ class Settings(BaseSettings):
 
     # Workspace
     workspace_id: str
-    workspace_ca_path: str
-    workspace_polling_url: str
+    control_plane_base_url: str
 
     # Workload
     workload_namespace: str = "saas-workload"

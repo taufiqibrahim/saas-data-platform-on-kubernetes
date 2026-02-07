@@ -23,9 +23,17 @@ Create the Workspace CR. In real environment this will be part of bootstrap proc
 kubectl apply -f examples/workspace-example.yaml
 ```
 
-## Building Container Image
+## Building and Push Container Image
 
 ```bash
-docker build -t saas/tenant-workspace-controller .
-docker push https://zot.saas.internal/saas/tenant-workspace-controller
+# Bump patch version, build and push
+make release
+
+# Bump minor version, build and push
+make release-minor
+
+# Bump major version, build and push
+make release-major
 ```
+
+For more detail please run `make help`.
