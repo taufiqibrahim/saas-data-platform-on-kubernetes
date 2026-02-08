@@ -12,9 +12,9 @@ spec:
   project: default
   sources:
     # Chart from original reference remote repo
-    - repoURL: registry-1.docker.io/cloudpirates
-      chart: temporal
-      targetRevision: 0.14.3
+    - repoURL: https://temporalio.github.io/helm-charts
+      chart: temporalio/temporal
+      targetRevision: 0.73.1
       helm:
         valueFiles:
           - $values/deployments/saas/gitops/deployments/core/temporal/values-{{ .Values.global.environment }}.yaml   # this points to the file in our git
