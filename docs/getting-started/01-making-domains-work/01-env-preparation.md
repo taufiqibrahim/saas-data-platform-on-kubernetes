@@ -58,6 +58,15 @@ sudo chown -R 100:1000 docker/openbao/data
 
 > `docker/openbao/data` is git-ignored.
 
+### RustFS (optional)
+
+```bash
+mkdir -p docker/rustfs/data
+sudo chown -R 10001:10001 docker/rustfs/data
+```
+
+> `docker/openbao/data` is git-ignored.
+
 ## Next Steps
 
 - [Architecture](./01-architecture.md)

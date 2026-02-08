@@ -55,6 +55,32 @@ docs.saas.internal {
 	}
 }
 
+rustfs.saas.internal {
+	reverse_proxy http://rustfs:9000
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.internal:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
+rustfs-console.saas.internal {
+	reverse_proxy http://rustfs:9001
+	tls {
+		issuer acme {
+			# The internal URL of your step-ca container
+			dir https://ca.saas.internal:9000/acme/acme/directory
+
+			# Caddy MUST trust the step-ca root certificate to talk to it
+			trusted_roots /step-ca-certs/root_ca.crt
+		}
+	}
+}
+
 # control-plane-api development server ran using pnpm dev
 apidev.saas.internal {
 	reverse_proxy host.docker.internal:5001 {

@@ -8,6 +8,8 @@ saas.internal {
         {$DOCKER_HOST_IP} bao.saas.internal
         {$DOCKER_HOST_IP} ca.saas.internal
         {$DOCKER_HOST_IP} docs.saas.internal
+        {$DOCKER_HOST_IP} rustfs.saas.internal
+        {$DOCKER_HOST_IP} rustfs-console.saas.internal
         {$DOCKER_HOST_IP} api.saas.internal
         {$DOCKER_HOST_IP} apidev.saas.internal
         {$DOCKER_HOST_IP} ui.saas.internal

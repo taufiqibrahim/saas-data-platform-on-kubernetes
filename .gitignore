@@ -8,6 +8,7 @@ certs/
 _data/
 docker/step-ca
 docker/openbao/data
+docker/rustfs/data
 docker/zot/htpasswd
 docker/zot/credentials*
 !docker/zot/credentials.example.json
