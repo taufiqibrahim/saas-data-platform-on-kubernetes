@@ -1,67 +1,56 @@
 server:
   config:
     persistence:
-      defaultStore: default
-      visibilityStore: visibility
-      numHistoryShards: 512
-      datastores:
-        default:
-          sql:
-            pluginName: postgres12
-            databaseName: temporal
-            host: _HOST_
-            port: 5432
-            user: temporal
-            existingSecret: temporal-db-credentials
-            secretKey: password
-            maxConns: 20
-            maxIdleConns: 20
-            maxConnLifetime: "1h"
-        visibility:
-          sql:
-            pluginName: postgres12
-            databaseName: temporal_visibility
-            host: _HOST_
-            port: 5432
-            user: temporal
-            existingSecret: temporal-db-credentials
-            secretKey: password
-            maxConns: 20
-            maxIdleConns: 20
-            maxConnLifetime: "1h"
+      default:
+        driver: "sql"
 
-  frontend:
-    metrics:
-      enabled: false
-    resources:
-      requests:
-        cpu: 100m
-        memory: 512Mi
+        sql:
+          driver: "postgres12"
+          host: temporal-db-rw.saas-system.svc.cluster.local
+          port: 5432
+          database: temporal
+          user: temporal
+          existingSecret: temporal-db-credentials
+          maxConns: 20
+          maxIdleConns: 20
+          maxConnLifetime: "1h"
 
-  history:
-    metrics:
-      enabled: false
-    resources:
-      requests:
-        cpu: 100m
-        memory: 512Mi
+      visibility:
+        driver: "sql"
 
-  matching:
-    metrics:
-      enabled: false
-    resources:
-      requests:
-        cpu: 100m
-        memory: 512Mi
+        sql:
+          driver: "postgres12"
+          host: temporal-db-rw.saas-system.svc.cluster.local
+          port: 5432
+          database: temporal_visibility
+          user: temporal
+          existingSecret: temporal-db-credentials
+          maxConns: 20
+          maxIdleConns: 20
+          maxConnLifetime: "1h"
 
-  worker:
-    metrics:
-      enabled: false
-    resources:
-      requests:
-        cpu: 100m
-        memory: 512Mi
-admintools:
+cassandra:
+  enabled: false
+
+mysql:
+  enabled: false
+
+postgresql:
   enabled: true
-web:
+
+prometheus:
   enabled: true
+
+grafana:
+  enabled: true
+  
+elasticsearch:
+  enabled: true
+
+schema:
+  createDatabase:
+    enabled: true
+  setup:
+    enabled: false
+  update:
+    enabled: false
