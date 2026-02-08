@@ -11,8 +11,8 @@ spec:
   project: default
   sources:
     # Chart from original reference remote repo
-    - repoURL: oci://registry-1.docker.io/cloudpirates
-      chart: keycloak
+    - repoURL: oci://registry-1.docker.io
+      chart: cloudpirates/keycloak
       targetRevision: 0.14.3
       helm:
         valueFiles:
