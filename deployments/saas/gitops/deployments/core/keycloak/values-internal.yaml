@@ -1,0 +1,50 @@
+global:
+  imageRegistry: docker.io
+  imagePullSecrets:
+  - dockerio-image-pull-secret
+
+keycloak:
+  hostname: "auth.saas.internal"
+  production: true
+  proxyHeaders: "xforwarded"
+  existingSecret: "keycloak-credentials"
+  secretKeys:
+    adminPasswordKey: "admin-password"
+
+database:
+  type: "postgres"
+  host: "keycloak-db-rw.saas-system.svc.cluster.local"
+  existingSecret: "keycloak-db-credentials"
+  secretKeys:
+    passwordKey: "password"
+    usernameKey: "username"
+# Disable embedded databases
+postgres:
+  enabled: false
+mariadb:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    # cert-manager annotation to request certificate from step-ca
+    cert-manager.io/cluster-issuer: step-ca-acme
+    
+    # NGINX specific annotations for ArgoCD
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # external-dns annotations for automatic DNS registration
+    external-dns.alpha.kubernetes.io/hostname: auth.saas.internal
+    external-dns.alpha.kubernetes.io/coredns-group: "g-saas"
+    external-dns.alpha.kubernetes.io/ttl: "300"
+  hosts:
+    - host: auth.saas.internal
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: keycloak-tls
+      hosts:
+        - auth.saas.internal

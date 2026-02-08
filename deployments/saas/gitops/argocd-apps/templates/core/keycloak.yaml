@@ -17,7 +17,7 @@ spec:
       targetRevision: 0.14.3
       helm:
         valueFiles:
-          - $values/deployments/saas/gitops/deployments/core/keycloak/values/{{ .Values.global.environment }}.yaml   # this points to the file in our git
+          - $values/deployments/saas/gitops/deployments/core/keycloak/values-{{ .Values.global.environment }}.yaml   # this points to the file in our git
     # Reference values from our git
     - repoURL: "{{ .Values.infra.source.repoUrl }}"
       targetRevision: "{{ .Values.infra.source.targetRevision }}"
