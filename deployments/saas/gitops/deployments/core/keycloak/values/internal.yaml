@@ -1,5 +1,23 @@
 global:
   imageRegistry: docker.io
-  # imageRegistry: zot.saas.internal
   imagePullSecrets:
   - dockerio-image-pull-secret
+
+keycloak:
+  existingSecret: "keycloak-credentials"
+  secretKeys:
+    adminPasswordKey: "admin-password"
+
+database:
+  type: "postgres"
+  host: "postgres.database.svc.cluster.local"
+  existingSecret: "keycloak-db-credentials"
+  secretKeys:
+    passwordKey: "password"
+    usernameKey: "username"
+
+# Disable embedded databases
+postgres:
+  enabled: false
+mariadb:
+  enabled: false
