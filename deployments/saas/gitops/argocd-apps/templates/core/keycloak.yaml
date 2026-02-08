@@ -23,7 +23,7 @@ spec:
       ref: values
   destination:
     server: {{ .Values.infra.destination.server }}
-    namespace: keycloak
+    namespace: saas-system
   syncPolicy:
     automated:
       prune: true

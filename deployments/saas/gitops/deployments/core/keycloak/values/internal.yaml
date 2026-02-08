@@ -1,0 +1,5 @@
+global:
+  imageRegistry: docker.io
+  # imageRegistry: zot.saas.internal
+  imagePullSecrets:
+  - dockerio-image-pull-secret
