@@ -1,0 +1,42 @@
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: keycloak-credentials
+  namespace: saas-system
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: SecretStore
+  target:
+    name: keycloak-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: admin-password
+      remoteRef:
+        key: keycloak-credentials
+        property: admin-password
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: keycloak-db-credentials
+  namespace: saas-system
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: SecretStore
+  target:
+    name: keycloak-db-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: db-password
+      remoteRef:
+        key: keycloak-db-credentials
+        property: db-password
+    - secretKey: db-username
+      remoteRef:
+        key: keycloak-db-credentials
+        property: db-username
