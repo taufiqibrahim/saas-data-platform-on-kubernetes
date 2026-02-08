@@ -22,7 +22,7 @@ spec:
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: temporal_visibility
+  name: temporal-visibility
 spec:
   name: temporal_visibility
   owner: temporal
