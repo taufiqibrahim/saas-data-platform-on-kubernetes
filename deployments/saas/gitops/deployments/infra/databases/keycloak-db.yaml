@@ -12,3 +12,28 @@ spec:
         name: keycloak-db-credentials
   storage:
     size: 4Gi
+
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: cluster-example
+
+  # backup:
+  #   barmanObjectStore:
+  #     destinationPath: s3://saas/database-backups/keycloak/
+  #     endpointURL: https://rustfs.saas.internal:9000
+  #     s3Credentials:
+  #       accessKeyId:
+  #         name: minio
+  #         key: ACCESS_KEY_ID
+  #       secretAccessKey:
+  #         name: minio
+  #         key: ACCESS_SECRET_KEY
+  #     wal:
+  #       compression: gzip
+  #     data:
+  #       additionalCommandArgs:
+  #         - "--min-chunk-size=5MB"
+  #         - "--read-timeout=60"
+  #         - "-vv"
