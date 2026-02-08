@@ -8,4 +8,4 @@ infra:
     repoUrl: https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes.git
     targetRevision: main
 keycloak:
-  enabled: false
+  enabled: true
