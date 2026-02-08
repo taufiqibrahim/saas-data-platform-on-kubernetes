@@ -1,0 +1,34 @@
+{{- if .Values.temporal.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: temporal
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: /deployments/saas/gitops/deployments/core/temporal
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    # Chart from original reference remote repo
+    - repoURL: registry-1.docker.io/cloudpirates
+      chart: temporal
+      targetRevision: 0.14.3
+      helm:
+        valueFiles:
+          - $values/deployments/saas/gitops/deployments/core/temporal/values-{{ .Values.global.environment }}.yaml   # this points to the file in our git
+    # Reference values from our git
+    - repoURL: "{{ .Values.infra.source.repoUrl }}"
+      targetRevision: "{{ .Values.infra.source.targetRevision }}"
+      ref: values
+  destination:
+    server: {{ .Values.infra.destination.server }}
+    namespace: saas-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}

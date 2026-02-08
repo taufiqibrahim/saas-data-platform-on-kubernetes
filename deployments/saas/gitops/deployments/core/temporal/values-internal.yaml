@@ -1,0 +1,26 @@
+server:
+  config:
+    persistence:
+      datastores:
+        default:
+          sql:
+            createDatabase: true
+            manageSchema: true
+            pluginName: postgres12
+            driverName: postgres12
+            databaseName: temporal
+            connectAddr: "postgres.example.com:5432"
+            user: temporal_user
+            existingSecret: temporal-db-secret
+            secretKey: password
+        visibility:
+          sql:
+            createDatabase: true
+            manageSchema: true
+            pluginName: postgres12
+            driverName: postgres12
+            databaseName: temporal_visibility
+            connectAddr: "postgres.example.com:5432"
+            user: temporal_user
+            existingSecret: temporal-db-secret
+            secretKey: password
