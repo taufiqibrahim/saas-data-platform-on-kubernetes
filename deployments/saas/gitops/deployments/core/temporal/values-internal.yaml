@@ -31,24 +31,32 @@ server:
             maxConnLifetime: "1h"
 
   frontend:
+    metrics:
+      enabled: false
     resources:
       requests:
         cpu: 100m
         memory: 512Mi
 
   history:
+    metrics:
+      enabled: false
     resources:
       requests:
         cpu: 100m
         memory: 512Mi
 
   matching:
+    metrics:
+      enabled: false
     resources:
       requests:
         cpu: 100m
         memory: 512Mi
 
   worker:
+    metrics:
+      enabled: false
     resources:
       requests:
         cpu: 100m
