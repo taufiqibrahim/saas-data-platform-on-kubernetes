@@ -1,2 +1,2 @@
 global:
-  imageRegistry: zot.saas.internal
+  # imageRegistry: zot.saas.internal
