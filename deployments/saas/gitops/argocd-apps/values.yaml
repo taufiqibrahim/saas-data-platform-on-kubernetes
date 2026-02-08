@@ -9,3 +9,5 @@ infra:
     targetRevision: main
 keycloak:
   enabled: true
+temporal:
+  enabled: true
