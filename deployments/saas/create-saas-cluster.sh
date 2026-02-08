@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 SAAS_BASE_URL="${SAAS_BASE_URL:-https://saas.internal}"
 SAAS_CONTROL_PLANE_API_URL="${SAAS_CONTROL_PLANE_API_URL:-https://api.saas.internal}"
 SAAS_BOOTSTRAP_URL="${SAAS_BASE_URL}/bootstrap"
-USAGE_HELP="Usage: TODO"
+USAGE_HELP=""
 
 # -----------------------------------------------------------------------------
 # Constants - Infrastructure
@@ -26,6 +26,7 @@ ROOT_CA_PATH=${ROOT_CA_PATH-"./docker/step-ca/certs/root_ca.crt"}
 LOCAL_REGISTRY_HOST=${LOCAL_REGISTRY_HOST-'zot.saas.internal'}
 OPENBAO_HOST=https://bao.saas.internal
 STEPCA_BASE_URL=https://ca.saas.internal:9000
+SYSTEM_NAMESPACE=saas-system
 
 # -----------------------------------------------------------------------------
 # Constants - Versions
@@ -109,6 +110,8 @@ preflight_checks() {
 }
 
 create_cluster() {
+log_section "Cluster setup"
+
 # Check if cluster already exists
 if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
     log_info "Cluster '${CLUSTER_NAME}' already exists. Skipping creation."
@@ -307,6 +310,59 @@ EOF
   rm /tmp/ingress-nginx-controller-values.yaml
 }
 
+bootstrap_external_secret_store() {
+  log_empty
+
+  # Encode root CA certificate
+  ROOT_CA_BASE64=$(cat "$ROOT_CA_PATH" | base64 -w 0)
+
+  log_info "Bootstrapping External Secrets for tenant: $TENANT_ID"
+
+  # Create Kubernetes secret containing the vault token
+  log_info "Creating Kubernetes secret with vault token"
+  kubectl create secret generic vault-token \
+      --from-literal=token="$TENANT_VAULT_TOKEN" \
+      --namespace=$SYSTEM_NAMESPACE \
+      --dry-run=client -o yaml | kubectl apply -f -
+
+  # Create SecretStore resource
+  log_info "Creating SecretStore resource"
+  cat <<EOF | kubectl apply -f -
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: vault
+  namespace: ${SYSTEM_NAMESPACE}
+spec:
+  provider:
+    vault:
+      server: "${OPENBAO_HOST}"
+      path: "secrets"
+      version: "v2"
+      namespace: "${TENANT_ID}"
+      caBundle: "${ROOT_CA_BASE64}"
+      auth:
+        tokenSecretRef:
+          name: "vault-token"
+          key: "token"
+EOF
+
+  # Verify the SecretStore
+  log_info "Verifying SecretStore status..."
+  kubectl get secretstore vault -n ${SYSTEM_NAMESPACE}
+  log_info "Waiting SecretStore ready..."
+  kubectl wait --for=condition=ready secretstore/vault -n ${SYSTEM_NAMESPACE} --timeout=300s || true
+  log_empty
+
+}
+
+ensure_cloudnative_pg() {
+    log_info "Installing addon CloudNativePG operator ${CLOUDNATIVEPG_VERSION}..."
+    curl -sSfL \
+      https://raw.githubusercontent.com/cloudnative-pg/artifacts/release-${CLOUDNATIVEPG_VERSION}/manifests/operator-manifest.yaml | \
+      kubectl apply --server-side -f -
+}
+
 ensure_argocd() {
   log_empty
   log_info "Installing ArgoCD ${ARGOCD_VERSION}"
@@ -343,41 +399,79 @@ ensure_argocd() {
 # -----------------------------------------------------------------------------
 log_section "SaaS Cluster Bootstrap"
 
-# Variables
-CLUSTER_NAME=$1
+# 
+
+# -----------------------------------------------------------------------------
+# Defaults
+# -----------------------------------------------------------------------------
+TENANT_ID="${TENANT_ID:-saas}"
+CLUSTER_NAME="${CLUSTER_NAME:-saas}"
+
+# -----------------------------------------------------------------------------
+# Validate required inputs
+# -----------------------------------------------------------------------------
+validate_inputs() {
+    log_info "Validating inputs..."
+
+    if [[ -z "$CLUSTER_NAME" ]]; then
+        log_error "Environment variable CLUSTER_NAME is required."
+        echo "${USAGE_HELP}"
+        exit 1
+    fi
+    log_info "✓ CLUSTER_NAME: ${CLUSTER_NAME}"
+
+    if [[ -z "$TENANT_ID" ]]; then
+        log_error "Environment variable TENANT_ID is required."
+        echo "${USAGE_HELP}"
+        exit 1
+    fi
+    log_info "✓ TENANT_ID: ${TENANT_ID}"
+
+    if [[ -z "$TENANT_VAULT_TOKEN" ]]; then
+        log_error "Environment variable TENANT_VAULT_TOKEN is required."
+        echo "${USAGE_HELP}"
+        exit 1
+    fi
+    log_info "✓ TENANT_VAULT_TOKEN: <redacted>"
+    log_empty
+
+}
+
+validate_inputs
 
 preflight_checks
 create_cluster
-ensure_helm
+# ensure_helm
 
-log_section "Kubernetes Setup"
-kubectl create namespace saas --dry-run=client -o yaml | kubectl apply -f -
+# log_section "Kubernetes Setup"
+# kubectl create namespace ${SYSTEM_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
-ensure_cert_manager
-ensure_cluster_issuer
-ensure_external_secret
-ensure_external_dns
-ensure_ingress_nginx
-ensure_argocd
-
-# Apply ArgoCD apps
-kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
+# ensure_cert_manager
+# ensure_cluster_issuer
+# ensure_external_secret
+# ensure_external_dns
+# ensure_ingress_nginx
+ensure_cloudnative_pg
+# ensure_argocd
 
 # ensure_password_generator
-# bootstrap_external_secret_store
+bootstrap_external_secret_store
 
-log_section "SaaS Cluster Bootstrap Complete"
-echo "To connect to cluster:
-Set kubectl context to "kind-saas"
-You can now use your cluster with:
+# log_section "SaaS Cluster Bootstrap Complete"
+# echo "To connect to cluster:
+# Set kubectl context to "kind-saas"
+# You can now use your cluster with:
 
-kubectl cluster-info --context kind-saas
-"
-log_empty
+# kubectl cluster-info --context kind-saas
+# "
+# log_empty
 
-echo ""
-echo -e "${GREEN}Troubleshooting Commands:${NC}"
-echo "Check certificate: kubectl get certificate -n argocd"
-echo "Check ingress: kubectl get ingress -n argocd"
-echo "Check external-dns logs: kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns"
-echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"
+# echo ""
+# echo -e "${GREEN}Troubleshooting Commands:${NC}"
+# echo "Check certificate: kubectl get certificate -n argocd"
+# echo "Check ingress: kubectl get ingress -n argocd"
+# echo "Check external-dns logs: kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns"
+# echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"
+
+# Apply ArgoCD apps
+# kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
