@@ -6,6 +6,9 @@ spec:
   configuration:
     destinationPath: s3://saas/database-backups/barmancloud/
     endpointURL: https://rustfs.saas.internal:9000
+    endpointCA:
+      name: step-ca-root-cert-secret
+      key: ca.crt
     s3Credentials:
       accessKeyId:
         name: rustfs-credentials
