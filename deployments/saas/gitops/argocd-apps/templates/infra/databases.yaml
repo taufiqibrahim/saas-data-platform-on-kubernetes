@@ -3,7 +3,7 @@ kind: Application
 metadata:
   name: databases
   annotations:
-    argocd.argoproj.io/manifest-generate-paths: /deployments/infra/databases
+    argocd.argoproj.io/manifest-generate-paths: /deployments/saas/gitops/deployments/infra/databases
     argocd.argoproj.io/sync-wave: "1"
   finalizers:
     - resources-finalizer.argocd.argoproj.io

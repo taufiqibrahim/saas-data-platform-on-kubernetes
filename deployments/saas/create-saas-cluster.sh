@@ -313,26 +313,34 @@ EOF
 bootstrap_external_secret_store() {
   log_empty
 
+  local namespaces=("$SYSTEM_NAMESPACE" "$@")
+
   # Encode root CA certificate
   ROOT_CA_BASE64=$(cat "$ROOT_CA_PATH" | base64 -w 0)
 
   log_info "Bootstrapping External Secrets for tenant: $TENANT_ID"
 
-  # Create Kubernetes secret containing the vault token
-  log_info "Creating Kubernetes secret with vault token"
-  kubectl create secret generic vault-token \
-      --from-literal=token="$TENANT_VAULT_TOKEN" \
-      --namespace=$SYSTEM_NAMESPACE \
-      --dry-run=client -o yaml | kubectl apply -f -
+  for ns in "${namespaces[@]}"; do
+    log_info "Setting up External Secret Store in namespace: $ns"
 
-  # Create SecretStore resource
-  log_info "Creating SecretStore resource"
-  cat <<EOF | kubectl apply -f -
+    # Ensure namespace exists
+    kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
+
+    # Create Kubernetes secret containing the vault token
+    log_info "Creating Kubernetes secret with vault token in namespace: $ns"
+    kubectl create secret generic vault-token \
+        --from-literal=token="$TENANT_VAULT_TOKEN" \
+        --namespace="$ns" \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+    # Create SecretStore resource
+    log_info "Creating SecretStore resource in namespace: $ns"
+    cat <<EOF | kubectl apply -f -
 apiVersion: external-secrets.io/v1
 kind: SecretStore
 metadata:
   name: vault
-  namespace: ${SYSTEM_NAMESPACE}
+  namespace: ${ns}
 spec:
   provider:
     vault:
@@ -347,12 +355,13 @@ spec:
           key: "token"
 EOF
 
-  # Verify the SecretStore
-  log_info "Verifying SecretStore status..."
-  kubectl get secretstore vault -n ${SYSTEM_NAMESPACE}
-  log_info "Waiting SecretStore ready..."
-  kubectl wait --for=condition=ready secretstore/vault -n ${SYSTEM_NAMESPACE} --timeout=300s || true
-  log_empty
+    # Verify the SecretStore
+    log_info "Verifying SecretStore status in namespace: $ns"
+    kubectl get secretstore vault -n "$ns"
+    log_info "Waiting SecretStore ready in namespace: $ns"
+    kubectl wait --for=condition=ready secretstore/vault -n "$ns" --timeout=300s || true
+    log_empty
+  done
 
 }
 
@@ -361,6 +370,13 @@ ensure_cloudnative_pg() {
     curl -sSfL \
       https://raw.githubusercontent.com/cloudnative-pg/artifacts/release-${CLOUDNATIVEPG_VERSION}/manifests/operator-manifest.yaml | \
       kubectl apply --server-side -f -
+
+    log_info "Installing the Barman Cloud Plugin..."
+    kubectl apply -f \
+        https://github.com/cloudnative-pg/plugin-barman-cloud/releases/download/v0.11.0/manifest.yaml
+    
+    log_info "Wait the Barman Cloud Plugin..."
+    kubectl wait --for=condition=available deployment/barman-cloud -n cnpg-system --timeout=300s || true
 }
 
 ensure_argocd() {
@@ -455,7 +471,7 @@ ensure_cloudnative_pg
 # ensure_argocd
 
 # ensure_password_generator
-bootstrap_external_secret_store
+bootstrap_external_secret_store "argocd"
 
 # log_section "SaaS Cluster Bootstrap Complete"
 # echo "To connect to cluster:

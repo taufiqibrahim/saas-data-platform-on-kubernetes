@@ -4,7 +4,7 @@ kind: Application
 metadata:
   name: keycloak
   annotations:
-    argocd.argoproj.io/manifest-generate-paths: /deployments/core/keycloak
+    argocd.argoproj.io/manifest-generate-paths: /deployments/saas/gitops/deployments/core/keycloak
     argocd.argoproj.io/sync-wave: "5"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
