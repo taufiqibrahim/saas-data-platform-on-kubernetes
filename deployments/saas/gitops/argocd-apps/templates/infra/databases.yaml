@@ -13,6 +13,8 @@ spec:
     repoURL: "{{ .Values.infra.source.repoUrl }}"
     targetRevision: "{{ .Values.infra.source.targetRevision }}"
     path: deployments/saas/gitops/deployments/infra/databases
+    directory:
+      recurse: true
   destination:
     server: {{ .Values.infra.destination.server }}
     namespace: saas-system
