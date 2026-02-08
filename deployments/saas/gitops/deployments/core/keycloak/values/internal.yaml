@@ -4,13 +4,16 @@ global:
   - dockerio-image-pull-secret
 
 keycloak:
+  hostname: "auth.saas.internal"
+  production: true
+  proxyHeaders: "xforwarded"
   existingSecret: "keycloak-credentials"
   secretKeys:
     adminPasswordKey: "admin-password"
 
 database:
   type: "postgres"
-  host: "postgres.database.svc.cluster.local"
+  host: "keycloak-db-rw.saas-system.svc.cluster.local"
   existingSecret: "keycloak-db-credentials"
   secretKeys:
     passwordKey: "password"
