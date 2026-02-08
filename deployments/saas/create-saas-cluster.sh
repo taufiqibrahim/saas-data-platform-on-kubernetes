@@ -38,6 +38,7 @@ CONSUL_VERSION=1.9.3
 EXTERNAL_DNS_VERSION=1.20.0
 EXTERNAL_SECRET_VERSION=v1.3.2
 INGRESS_NGINX_VERSION=4.14.2
+METRIC_SERVER_VERSION=3.13.0
 VAULT_VERSION=0.32.0
 
 # -----------------------------------------------------------------------------
@@ -171,6 +172,7 @@ ensure_helm() {
     helm repo add argo https://argoproj.github.io/argo-helm
     helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
     helm repo update
 }
 
@@ -286,6 +288,16 @@ EOF
     --wait
 
     rm -f /tmp/external-dns-values.yaml
+}
+
+ensure_metric_server() {
+    log_empty
+    log_info "Installing metric server ${METRIC_SERVER_VERSION}"
+    helm upgrade --install metrics-server metrics-server/metrics-server \
+        --namespace kube-system \
+        --version ${METRIC_SERVER_VERSION} \
+        --set "args={--kubelet-insecure-tls,--kubelet-preferred-address-types=InternalIP}" \
+        --wait
 }
 
 ensure_ingress_nginx() {
@@ -457,37 +469,38 @@ validate_inputs
 
 preflight_checks
 create_cluster
-# ensure_helm
+ensure_helm
 
-# log_section "Kubernetes Setup"
-# kubectl create namespace ${SYSTEM_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+log_section "Kubernetes Setup"
+kubectl create namespace ${SYSTEM_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
-# ensure_cert_manager
-# ensure_cluster_issuer
-# ensure_external_secret
-# ensure_external_dns
-# ensure_ingress_nginx
+ensure_cert_manager
+ensure_cluster_issuer
+ensure_external_secret
+ensure_external_dns
+ensure_metric_server
+ensure_ingress_nginx
 ensure_cloudnative_pg
-# ensure_argocd
+ensure_argocd
 
-# ensure_password_generator
+ensure_password_generator
 bootstrap_external_secret_store "argocd"
 
-# log_section "SaaS Cluster Bootstrap Complete"
-# echo "To connect to cluster:
-# Set kubectl context to "kind-saas"
-# You can now use your cluster with:
+log_section "SaaS Cluster Bootstrap Complete"
+echo "To connect to cluster:
+Set kubectl context to "kind-saas"
+You can now use your cluster with:
 
-# kubectl cluster-info --context kind-saas
-# "
-# log_empty
+kubectl cluster-info --context kind-saas
+"
+log_empty
 
-# echo ""
-# echo -e "${GREEN}Troubleshooting Commands:${NC}"
-# echo "Check certificate: kubectl get certificate -n argocd"
-# echo "Check ingress: kubectl get ingress -n argocd"
-# echo "Check external-dns logs: kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns"
-# echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"
+echo ""
+echo -e "${GREEN}Troubleshooting Commands:${NC}"
+echo "Check certificate: kubectl get certificate -n argocd"
+echo "Check ingress: kubectl get ingress -n argocd"
+echo "Check external-dns logs: kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns"
+echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"
 
-# Apply ArgoCD apps
-# kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
+Apply ArgoCD apps
+kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
