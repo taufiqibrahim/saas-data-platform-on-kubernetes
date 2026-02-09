@@ -1,21 +1,24 @@
 config:
-  inCluster: true
-  inClusterContextName: "saas"
+  # inCluster: true
+  # inClusterContextName: "saas"
   # baseURL:
   oidc:
     secret:
-      create: false
+      create: true
+    externalSecret:
+      enabled: true
       name: headlamp-oidc-secret
-# -- Headlamp containers volume mounts
-volumeMounts:
-  - name: "headlamp-kubeconfig"
-    mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs"
-    # subpath should match the key in secret and will be mounted as a file named "config"
-    # subPath: kubeconfig
-volumes:
-  - name: "headlamp-kubeconfig"
-    secret:
-      secretName: "kubeconfig-consumer-secret"
+    # usePKCE: true
+# # -- Headlamp containers volume mounts
+# volumeMounts:
+#   - name: "headlamp-kubeconfig"
+#     mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs"
+#     # subpath should match the key in secret and will be mounted as a file named "config"
+#     # subPath: kubeconfig
+# volumes:
+#   - name: "headlamp-kubeconfig"
+#     secret:
+#       secretName: "kubeconfig-consumer-secret"
 # env:
 #   - name: KUBECONFIG 
 #     value: "/home/headlamp/.kube/config"
