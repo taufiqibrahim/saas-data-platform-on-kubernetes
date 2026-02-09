@@ -15,19 +15,19 @@ config:
 # Headlamp containers volume mounts
 volumeMounts:
   - name: stepca-root
-    secret:
-      secretName: step-ca-root-cert-secret
-      items:
-        - key: ca.crt
-          path: /home/headlamp/.config/Headlamp/certs/stepca-root.crt
+    mountPath: /home/headlamp/.config/Headlamp/certs/stepca-root.crt
+    readOnly: true
 #   - name: "headlamp-kubeconfig"
 #     mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs"
 #     # subpath should match the key in secret and will be mounted as a file named "config"
 #     # subPath: kubeconfig
 volumes:
   - name: stepca-root
-    mountPath: /etc/ssl/stepca
-    readOnly: true
+    secret:
+      secretName: step-ca-root-cert-secret
+      items:
+        - key: ca.crt
+          path: stepca-root.crt
 #   - name: "headlamp-kubeconfig"
 #     secret:
 #       secretName: "kubeconfig-consumer-secret"
