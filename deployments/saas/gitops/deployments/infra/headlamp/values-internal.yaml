@@ -8,7 +8,7 @@ config:
     externalSecret:
       enabled: true
       name: headlamp-oidc-credentials
-    usePKCE: "true"
+    usePKCE: true
 # # -- Headlamp containers volume mounts
 # volumeMounts:
 #   - name: "headlamp-kubeconfig"
