@@ -15,7 +15,7 @@ config:
 # Headlamp containers volume mounts
 volumeMounts:
   - name: stepca-root
-    mountPath: /home/headlamp/.config/Headlamp/certs/stepca-root.crt
+    mountPath: /home/headlamp/.config/Headlamp/certs
     readOnly: true
 #   - name: "headlamp-kubeconfig"
 #     mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs"
