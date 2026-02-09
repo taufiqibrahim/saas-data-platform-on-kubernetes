@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: keycloak-db
+  name: keycloak-db-cluster
 spec:
   instances: 2
   bootstrap:
@@ -18,22 +18,3 @@ spec:
       isWALArchiver: true
       parameters:
         barmanObjectName: rustfs-barman-object-store
-
-  # backup:
-  #   barmanObjectStore:
-  #     destinationPath: s3://saas/database-backups/keycloak/
-  #     endpointURL: https://rustfs.saas.internal:9000
-  #     s3Credentials:
-  #       accessKeyId:
-  #         name: minio
-  #         key: ACCESS_KEY_ID
-  #       secretAccessKey:
-  #         name: minio
-  #         key: ACCESS_SECRET_KEY
-  #     wal:
-  #       compression: gzip
-  #     data:
-  #       additionalCommandArgs:
-  #         - "--min-chunk-size=5MB"
-  #         - "--read-timeout=60"
-  #         - "-vv"
