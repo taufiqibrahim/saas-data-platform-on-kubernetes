@@ -1,10 +1,10 @@
-{{- if .Values.keycloak.enabled }}
+{{- if .Values.headlamp.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: keycloak
+  name: headlamp
   annotations:
-    argocd.argoproj.io/manifest-generate-paths: /deployments/saas/gitops/deployments/core/keycloak
+    argocd.argoproj.io/manifest-generate-paths: /deployments/saas/gitops/deployments/core/headlamp
     argocd.argoproj.io/sync-wave: "5"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -12,12 +12,12 @@ spec:
   project: default
   sources:
     # Chart from original reference remote repo
-    - repoURL: registry-1.docker.io/cloudpirates
-      chart: keycloak
-      targetRevision: 0.14.3
+    - repoURL: https://kubernetes-sigs.github.io/headlamp/
+      chart: headlamp
+      targetRevision: 0.40.0
       helm:
         valueFiles:
-          - $values/deployments/saas/gitops/deployments/core/keycloak/values-{{ .Values.global.environment }}.yaml   # this points to the file in our git
+          - $values/deployments/saas/gitops/deployments/core/headlamp/values-{{ .Values.global.environment }}.yaml   # this points to the file in our git
     # Reference values from our git
     - repoURL: "{{ .Values.infra.source.repoURL }}"
       targetRevision: "{{ .Values.infra.source.targetRevision }}"

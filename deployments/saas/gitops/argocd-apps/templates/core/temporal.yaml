@@ -19,7 +19,7 @@ spec:
         valueFiles:
           - $values/deployments/saas/gitops/deployments/core/temporal/values-{{ .Values.global.environment }}.yaml   # this points to the file in our git
     # Reference values from our git
-    - repoURL: "{{ .Values.infra.source.repoUrl }}"
+    - repoURL: "{{ .Values.infra.source.repoURL }}"
       targetRevision: "{{ .Values.infra.source.targetRevision }}"
       ref: values
   destination:

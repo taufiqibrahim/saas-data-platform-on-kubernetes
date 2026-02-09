@@ -5,8 +5,10 @@ infra:
   destination:
     server: https://kubernetes.default.svc
   source:
-    repoUrl: https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes.git
+    repoURL: https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes.git
     targetRevision: main
+# headlamp:
+#   enabled: true
 keycloak:
   enabled: false
 temporal:
