@@ -1,7 +1,7 @@
 config:
   extraArgs:
   - --oidc-skip-tls-verify
-  - --oidc-use-pkce=false
+  - --oidc-use-pkce=true
   - --oidc-ca-file=/home/headlamp/certs/stepca-root.crt
   oidc:
     secret:
@@ -31,9 +31,9 @@ volumes:
 #   - name: "headlamp-kubeconfig"
 #     secret:
 #       secretName: "kubeconfig-consumer-secret"
-# env:
-#   - name: KUBECONFIG 
-#     value: "/home/headlamp/.kube/config"
+env:
+  - name: KUBECONFIG 
+    value: "/home/headlamp/.kube/config"
 ingress:
   enabled: true
   ingressClassName: "nginx"
