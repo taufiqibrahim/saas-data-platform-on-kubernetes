@@ -7,7 +7,7 @@ config:
       create: true
     externalSecret:
       enabled: true
-      name: headlamp-oidc-secret
+      name: headlamp-oidc-credentials
     # usePKCE: true
 # # -- Headlamp containers volume mounts
 # volumeMounts:
