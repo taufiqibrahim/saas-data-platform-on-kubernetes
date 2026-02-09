@@ -422,6 +422,19 @@ ensure_argocd() {
   log_info "ArgoCD Admin Password: ${ARGOCD_PASSWORD}"
 }
 
+ensure_kubeconfig_consumer_secret() {
+    log_empty
+    log_info "Creating Headlamp kubeconfig secret..."
+    
+    # Generate a kubeconfig for the current cluster
+    kubectl config view --raw --minify --flatten \
+        | kubectl create secret generic kubeconfig-consumer-secret \
+            --from-file=kubeconfig=/dev/stdin \
+            --namespace="${SYSTEM_NAMESPACE}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+}
+
+
 # -----------------------------------------------------------------------------
 # Main execution
 # -----------------------------------------------------------------------------
@@ -485,6 +498,7 @@ ensure_argocd
 
 ensure_password_generator
 bootstrap_external_secret_store "argocd"
+ensure_kubeconfig_consumer_secret
 
 log_section "SaaS Cluster Bootstrap Complete"
 echo "To connect to cluster:

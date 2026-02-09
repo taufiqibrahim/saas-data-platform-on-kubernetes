@@ -28,23 +28,29 @@ The `create-saas-cluster.sh` script performs the following steps:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `TENANT_VAULT_TOKEN` | | **Required** Vault token |
+| `TENANT_ID` | `saas` | Tenant ID |
+| `CLUSTER_NAME` | `saas` | Cluster name |
 | `ROOT_CA_PATH` | `./docker/step-ca/certs/root_ca.crt` | Path to the root CA certificate file |
 | `REGISTRY_HOST` | `zot.saas.internal` | Hostname of the trusted container registry |
 
 Usage
 
 ```bash
-./deployments/saas/create-saas-cluster.sh <CLUSTER_NAME>
+./deployments/saas/create-saas-cluster.sh
 ```
 
 Example
 
 ```bash
 # Using default settings
-./deployments/saas/create-saas-cluster.sh saas
+export TENANT_VAULT_TOKEN=s.cXXXXX.XXXX
+./deployments/saas/create-saas-cluster.sh
 
 # Or with custom ROOT_CA_PATH
-ROOT_CA_PATH=/path/to/your/ca.crt ./deployments/saas/create-saas-cluster.sh saas-0
+export ROOT_CA_PATH=/path/to/your/ca.crt
+export TENANT_VAULT_TOKEN=s.cXXXXX.XXXX
+./deployments/saas/create-saas-cluster.sh saas
 ```
 
 Feel free to experiment with your own Kind configuration by referring to [https://kind.sigs.k8s.io/docs/user/configuration/](https://kind.sigs.k8s.io/docs/user/configuration/).
@@ -63,41 +69,7 @@ saas
 
 In order to interact with a specific cluster, we need to specify the cluster name as a context in `kubectl` as the current context:
 ```bash
-kubectl config use-context kind-saas-0
+kubectl config use-context kind-saas
 ```
 
 Now we're ready to use the cluster.
-
-## Bootstrap The Cluster
-
-```bash
-DOCKER_HOST_IP=<docker-host-ip> ROOT_CA_PATH=./docker/step-ca/certs/root_ca.crt ./deployments/saas/bootstrap-saas-cluster.sh
-```
-
-## Troubleshootings
-
-### Error ErrImagePull, ImagePullBackOff
-
-Check the error message in Kubernetes pod status:
-```bash
-...
-status:
-  conditions:
-    ...
-    started: false
-    state:
-      waiting:
-        message: 'Back-off pulling image "nicolaka/netshoot:latest": ErrImagePull:
-          failed to pull and unpack image "docker.io/nicolaka/netshoot:latest": failed
-          to copy: read tcp 172.18.0.3:33362->104.16.101.215:443: read: connection
-          reset by peer'
-        reason: ImagePullBackOff
-```
-
-Solution:
-
-Pre-pull the image on the host and load it into KIND:
-```bash
-docker pull nicolaka/netshoot:latest
-kind load docker-image nicolaka/netshoot:latest --name=saas-cluster
-```

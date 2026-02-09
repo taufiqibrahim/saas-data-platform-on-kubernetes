@@ -1,8 +1,20 @@
 config:
-  # inCluster: true
-  # inClusterContextName: "saas"
+  inCluster: true
+  inClusterContextName: "saas"
   # baseURL:
   oidc:
     secret:
       create: false
       name: headlamp-oidc-secret
+# -- Headlamp containers volume mounts
+volumeMounts:
+  - name: "headlamp-kubeconfig"
+    mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs/"
+volumes:
+  - name: "headlamp-kubeconfig"
+    secret:
+      secretName: "kubeconfig-consumer-secret"
+      mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs/"
+      # items:
+      # - key: username
+      #   path: my-group/my-username
