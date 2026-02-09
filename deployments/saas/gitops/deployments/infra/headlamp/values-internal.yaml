@@ -1,8 +1,8 @@
 config:
   extraArgs:
-  # - --oidc-skip-tls-verify
+  - --oidc-skip-tls-verify
   - --oidc-use-pkce=true
-  - --oidc-ca-file=/home/headlamp/.config/Headlamp/certs/stepca-root.crt
+  - --oidc-ca-file=/home/headlamp/certs/stepca-root.crt
   oidc:
     secret:
       create: false
@@ -15,7 +15,7 @@ config:
 # Headlamp containers volume mounts
 volumeMounts:
   - name: stepca-root
-    mountPath: /home/headlamp/.config/Headlamp/certs
+    mountPath: /home/headlamp/certs
     readOnly: true
 #   - name: "headlamp-kubeconfig"
 #     mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs"
