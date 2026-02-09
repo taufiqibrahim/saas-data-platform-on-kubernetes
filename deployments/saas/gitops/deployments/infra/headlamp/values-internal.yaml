@@ -9,12 +9,10 @@ config:
 # -- Headlamp containers volume mounts
 volumeMounts:
   - name: "headlamp-kubeconfig"
-    mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs/"
+    mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs/config"
+    # subpath should match the key in secret and will be mounted as a file named config
+    subPath: kubeconfig
 volumes:
   - name: "headlamp-kubeconfig"
     secret:
       secretName: "kubeconfig-consumer-secret"
-      mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs/"
-      # items:
-      # - key: username
-      #   path: my-group/my-username
