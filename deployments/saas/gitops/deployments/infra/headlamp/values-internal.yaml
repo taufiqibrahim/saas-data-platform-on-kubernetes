@@ -41,7 +41,7 @@ ingress:
     - host: headlamp.saas.internal
       paths:
         - path: /
-          pathType: Prefix
+          type: Prefix
   tls:
     - secretName: headlamp-tls
       hosts:
