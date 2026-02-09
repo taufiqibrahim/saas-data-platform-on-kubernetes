@@ -13,7 +13,7 @@ keycloak:
 
 database:
   type: "postgres"
-  host: "keycloak-db-rw.saas-system.svc.cluster.local"
+  host: "keycloak-db-cluster-rw.saas-system.svc.cluster.local"
   existingSecret: "keycloak-db-credentials"
   secretKeys:
     passwordKey: "password"
