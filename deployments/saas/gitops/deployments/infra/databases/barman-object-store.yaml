@@ -1,7 +1,7 @@
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
-  name: rustfs-store
+  name: rustfs-barman-object-store
 spec:
   configuration:
     destinationPath: s3://saas/database-backups/barmancloud/
