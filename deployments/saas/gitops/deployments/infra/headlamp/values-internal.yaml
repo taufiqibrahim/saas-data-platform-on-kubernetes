@@ -1,21 +1,33 @@
 config:
   extraArgs:
-  - --oidc-skip-tls-verify
+  # - --oidc-skip-tls-verify
   - --oidc-use-pkce=true
+  - --oidc-ca-file=/home/headlamp/.config/Headlamp/certs/stepca-root.crt
   oidc:
     secret:
       create: true
     externalSecret:
       enabled: true
       name: headlamp-oidc-credentials
-    # usePKCE: true
-# # -- Headlamp containers volume mounts
-# volumeMounts:
+
+# for saas.internal experiment only
+# we need to allow Headlamp to trust StepCA root cert
+# Headlamp containers volume mounts
+volumeMounts:
+  - name: stepca-root
+    secret:
+      secretName: step-ca-root-cert-secret
+      items:
+        - key: ca.crt
+          path: /home/headlamp/.config/Headlamp/certs/stepca-root.crt
 #   - name: "headlamp-kubeconfig"
 #     mountPath: "/home/headlamp/.config/Headlamp/kubeconfigs"
 #     # subpath should match the key in secret and will be mounted as a file named "config"
 #     # subPath: kubeconfig
-# volumes:
+volumes:
+  - name: stepca-root
+    mountPath: /etc/ssl/stepca
+    readOnly: true
 #   - name: "headlamp-kubeconfig"
 #     secret:
 #       secretName: "kubeconfig-consumer-secret"
