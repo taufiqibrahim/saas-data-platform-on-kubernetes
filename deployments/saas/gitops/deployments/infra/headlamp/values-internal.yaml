@@ -16,3 +16,6 @@ volumes:
   - name: "headlamp-kubeconfig"
     secret:
       secretName: "kubeconfig-consumer-secret"
+env:
+  - name: KUBECONFIG 
+    value: "/home/headlamp/.config/Headlamp/kubeconfigs/config"
