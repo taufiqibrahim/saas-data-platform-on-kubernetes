@@ -1,7 +1,6 @@
 config:
-  # inCluster: true
-  # inClusterContextName: "saas"
-  # baseURL: 
+  extraArgs:
+  - -insecure-ssl
   oidc:
     secret:
       create: true
