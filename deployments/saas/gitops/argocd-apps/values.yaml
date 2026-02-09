@@ -10,4 +10,4 @@ infra:
 keycloak:
   enabled: true
 temporal:
-  enabled: true
+  enabled: false
