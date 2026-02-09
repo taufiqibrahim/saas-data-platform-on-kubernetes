@@ -1,6 +1,7 @@
 config:
   extraArgs:
-  - -insecure-ssl
+  - --oidc-skip-tls-verify
+  - --oidc-use-pkce=true
   oidc:
     secret:
       create: true
