@@ -10,6 +10,6 @@ infra:
 headlamp:
   enabled: true
 keycloak:
-  enabled: false
+  enabled: true
 temporal:
   enabled: false
