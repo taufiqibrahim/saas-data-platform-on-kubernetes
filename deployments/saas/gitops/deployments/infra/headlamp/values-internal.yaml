@@ -1,0 +1,8 @@
+config:
+  inCluster: true
+  inClusterContextName: "saas"
+  # baseURL:
+  oidc:
+    secret:
+      create: false
+      name: headlamp-oidc-secret
