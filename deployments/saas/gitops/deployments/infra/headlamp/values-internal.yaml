@@ -1,6 +1,6 @@
 config:
-  inCluster: true
-  inClusterContextName: "saas"
+  # inCluster: true
+  # inClusterContextName: "saas"
   # baseURL:
   oidc:
     secret:
