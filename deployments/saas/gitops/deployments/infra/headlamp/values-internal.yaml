@@ -29,7 +29,7 @@ ingress:
     # cert-manager annotation to request certificate from step-ca
     cert-manager.io/cluster-issuer: step-ca-acme
     
-    # NGINX specific annotations for ArgoCD
+    # NGINX specific annotations
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     
