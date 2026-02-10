@@ -496,7 +496,6 @@ ensure_ingress_nginx
 ensure_cloudnative_pg
 ensure_argocd
 
-ensure_password_generator
 bootstrap_external_secret_store "argocd"
 ensure_kubeconfig_consumer_secret
 
@@ -516,5 +515,4 @@ echo "Check ingress: kubectl get ingress -n argocd"
 echo "Check external-dns logs: kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns"
 echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"
 
-Apply ArgoCD apps
 kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
