@@ -31,7 +31,7 @@ import {
   ProvisionAccountMembershipData,
 } from './account.type';
 
-export const accountSelect = Prisma.validator<Prisma.AccountSelect>()({
+export const accountSelect = {
   uid: true,
   extAccountId: true,
   name: true,
@@ -82,7 +82,7 @@ export const accountSelect = Prisma.validator<Prisma.AccountSelect>()({
   //     networkConfig: true,
   //   },
   // },
-});
+} satisfies Prisma.AccountSelect;
 
 export async function listAccountsInternal({
   principal,

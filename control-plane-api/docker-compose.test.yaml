@@ -1,0 +1,101 @@
+# Minimal services for integration tests
+# Usage: docker compose -f docker-compose.test.yaml up -d
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+volumes:
+  test_pgdata:
+  test_keycloak_pgdata:
+
+networks:
+  test:
+    driver: bridge
+    name: cp-test
+
+services:
+  cp-test-db:
+    image: postgres:16
+    container_name: cp-test-db
+    environment:
+      POSTGRES_DB: saas_test
+      POSTGRES_USER: saas
+      POSTGRES_PASSWORD: saas
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_pgdata:/var/lib/postgresql/data
+    logging: *default-logging
+    networks:
+      - test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saas -d saas_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  keycloak-test-db:
+    image: postgres:16
+    container_name: cp-test-keycloak-pg
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - test_keycloak_pgdata:/var/lib/postgresql/data
+    logging: *default-logging
+    networks:
+      - test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  keycloak-test:
+    image: quay.io/keycloak/keycloak:26.5
+    container_name: cp-test-keycloak
+    command: start-dev
+    environment:
+      KC_HOSTNAME: "localhost"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: kcadmin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: kcadmin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-test-db:5432/keycloak?schema=public
+      KC_DB_HOST: keycloak-test-db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_CACHE: "local"
+    ports:
+      - "5981:8080"
+    depends_on:
+      keycloak-test-db:
+        condition: service_healthy
+    logging: *default-logging
+    networks:
+      - test
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e 'GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n' >&3;grep -q '200' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  cerbos-test:
+    image: cerbos/cerbos:0.50.0
+    container_name: cp-test-cerbos
+    command: ["server", "--config=/config/.cerbos.yaml"]
+    ports:
+      - "5094:3592"
+      - "5095:3593"
+    volumes:
+      - ./cerbos:/config:ro
+    logging: *default-logging
+    networks:
+      - test

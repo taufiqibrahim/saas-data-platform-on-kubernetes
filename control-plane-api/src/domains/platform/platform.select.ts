@@ -1,15 +1,13 @@
 import { Prisma } from '@prisma/client';
 
-export const platformProviderSelect = Prisma.validator<Prisma.PlatformProviderSelect>()({
+export const platformProviderSelect = {
   uid: true,
   name: true,
   displayName: true,
-});
+} satisfies Prisma.PlatformProviderSelect;
 
-export const platformProviderRegionSelect = Prisma.validator<Prisma.PlatformProviderRegionSelect>()(
-  {
-    uid: true,
-    name: true,
-    displayName: true,
-  },
-);
+export const platformProviderRegionSelect = {
+  uid: true,
+  name: true,
+  displayName: true,
+} satisfies Prisma.PlatformProviderRegionSelect;

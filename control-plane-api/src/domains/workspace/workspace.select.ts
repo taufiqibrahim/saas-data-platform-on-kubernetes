@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 
 import { createdByPrincipalSelect } from '../principal/principal.select';
 
-export const workspaceSelect = Prisma.validator<Prisma.WorkspaceSelect>()({
+export const workspaceSelect = {
   id: false,
   uid: true,
   extWorkspaceId: true,
@@ -71,9 +71,9 @@ export const workspaceSelect = Prisma.validator<Prisma.WorkspaceSelect>()({
     select: createdByPrincipalSelect,
   },
   updatedAt: true,
-});
+} satisfies Prisma.WorkspaceSelect;
 
-export const workspaceProvisionConfigSelect = Prisma.validator<Prisma.WorkspaceSelect>()({
+export const workspaceProvisionConfigSelect = {
   id: false,
   uid: true,
   extWorkspaceId: true,
@@ -116,4 +116,4 @@ export const workspaceProvisionConfigSelect = Prisma.validator<Prisma.WorkspaceS
       extAccountId: true,
     },
   },
-});
+} satisfies Prisma.WorkspaceSelect;

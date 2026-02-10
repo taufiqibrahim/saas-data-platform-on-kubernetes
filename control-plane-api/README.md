@@ -96,6 +96,23 @@ npx prisma migrate reset
 
 Control Plane API service will be accessible on **http://localhost:3000** and API docs can be accessed on **http://localhost:3000/docs**.
 
+### Tests
+```bash
+cd control-plane-api
+
+# 1. Start test services
+docker compose -f docker-compose.test.yaml up -d
+
+# 2. Wait for keycloak to be healthy (~30s)
+docker compose -f docker-compose.test.yaml ps
+
+# 3. Run tests
+pnpm test
+
+# 4. Tear down
+docker compose -f docker-compose.test.yaml down -v
+```
+
 ---
 
 ## Features

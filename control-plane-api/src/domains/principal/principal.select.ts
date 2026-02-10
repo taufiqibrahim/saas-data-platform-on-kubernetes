@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 
-export const createdByPrincipalSelect = Prisma.validator<Prisma.PrincipalSelect>()({
+export const createdByPrincipalSelect = {
   uid: true,
   externalId: true,
   email: true,
-});
+} satisfies Prisma.PrincipalSelect;

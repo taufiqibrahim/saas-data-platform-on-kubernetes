@@ -41,7 +41,7 @@
       "@middlewares/*": ["src/middlewares/*"],
       "@utils/*": ["src/utils/*"],
       "@helpers/*": ["src/helpers/*"],
-      "@prisma/*": ["prisma/*"],
+      "@prisma/*": ["prisma/*", "generated/prisma/*"],
       "@validator/*": ["src/validator/*"],
       "@templates/*": ["src/templates/*"],
       "@temporal/*": ["src/temporal/*"],
@@ -50,6 +50,4 @@
       "tsoa/": ["node_modules/tsoa/dist/"]
     }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["tests", "node_modules"]
 }
