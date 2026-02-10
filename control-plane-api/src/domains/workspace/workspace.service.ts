@@ -1,6 +1,7 @@
 // import * as RoleService from '@domains/permission/role.service';
 // import * as WorkspaceMemberService from '@domains/workspace/workspaceMember.service';
 import { Prisma, Workspace } from '@prisma/client';
+import { randomBytes } from 'crypto';
 
 import { prisma } from '@/clients/prisma.client';
 // import { WorkflowHandle } from '@temporalio/client';
@@ -8,19 +9,30 @@ import { prisma } from '@/clients/prisma.client';
 // import { connectTemporalClient } from '@/clients/temporal.client';
 // import config from '@/config/config';
 import logger from '@/config/logger';
+import { checkPermission } from '@/middlewares/authorization.middleware';
+import { HttpError } from '@/types/errors';
 // import { WorkspaceProvisionConfig, WorkspaceWorkflowOp } from '@/temporal/types/workspaceProvisioning.type';
 // import { workspaceProvisioningWorkflow } from '@/temporal/workflows/workspaceProvisioning.workflow';
 // import { HttpError } from '@/types/errors';
 import { offsetPagination } from '@/utils/api';
-
-import { workspaceSelect } from './workspace.select';
-import { AgentRegisterRequest, AgentRegisterResponse, AgentSyncParams, AgentSyncResponse, GenerateBootstrapTokenParams, GenerateBootstrapTokenResponse, GetWorkspaceParams, ListWorkspacesParams, ListWorkspacesResponse, ProvisionWorkspaceData, WorkspaceResponse } from './workspace.type';
-import { checkPermission } from '@/middlewares/authorization.middleware';
 import { generateWorkspaceId } from '@/utils/idGenerator';
-import { createdByPrincipalSelect } from '../principal/principal.select';
-import { HttpError } from '@/types/errors';
-import { randomBytes } from 'crypto';
+
 import { CertService } from '../certificate/cert.service';
+import { createdByPrincipalSelect } from '../principal/principal.select';
+import { workspaceSelect } from './workspace.select';
+import {
+  AgentRegisterRequest,
+  AgentRegisterResponse,
+  AgentSyncParams,
+  AgentSyncResponse,
+  GenerateBootstrapTokenParams,
+  GenerateBootstrapTokenResponse,
+  GetWorkspaceParams,
+  ListWorkspacesParams,
+  ListWorkspacesResponse,
+  ProvisionWorkspaceData,
+  WorkspaceResponse,
+} from './workspace.type';
 // import { generateWorkspaceId } from '@/utils/idGenerator';
 // import { deepMergeObject, isNonEmptyObject } from '@/utils/json.utils'
 
@@ -190,18 +202,21 @@ export async function createWorkspaceTx(
     where: {
       members: {
         some: {
-          principalId: principal.id
-        }
+          principalId: principal.id,
+        },
       },
       extAccountId: data.extAccountId,
       deletedAt: null,
-    }
+    },
   });
   if (!account) {
     throw new HttpError(404, `Account ${data.extAccountId} not found`);
   }
   if (account.status != 'ACTIVE') {
-    throw new HttpError(400, `Can not create workspace on an account with status=${account.status}`);
+    throw new HttpError(
+      400,
+      `Can not create workspace on an account with status=${account.status}`,
+    );
   }
 
   // Validate or generate external workspace ID
@@ -210,13 +225,16 @@ export async function createWorkspaceTx(
     sanitizedExtWorkspaceId && sanitizedExtWorkspaceId.length >= 5
       ? sanitizedExtWorkspaceId
       : generateWorkspaceId();
-  logger.debug({ data, sanitizedExtWorkspaceId, extWorkspaceId }, "Validate or generate external account ID")
+  logger.debug(
+    { data, sanitizedExtWorkspaceId, extWorkspaceId },
+    'Validate or generate external account ID',
+  );
 
   // Check if workspace exist
   const workspaceExists = await tx.workspace.findFirst({
     where: {
       extWorkspaceId: extWorkspaceId,
-      deletedAt: null
+      deletedAt: null,
     },
     include: {
       createdBy: {
@@ -250,7 +268,6 @@ export async function createWorkspaceTx(
   }
 
   return workspace;
-
 }
 /******************************************************************************
  * Provision a workspace
@@ -259,7 +276,6 @@ export async function provisionWorkspace({
   principal,
   data,
 }: ProvisionWorkspaceData): Promise<WorkspaceResponse | null> {
-
   await checkPermission({
     principal,
     resource: {
@@ -280,7 +296,6 @@ export async function provisionWorkspace({
       data,
     });
 
-
     // const workspace = await tx.workspace.findUnique({
     //   // where: { uid, members: { some: { userId } } },
     //   where: { uid }, // disable workspace membership
@@ -295,8 +310,8 @@ export async function provisionWorkspace({
     const workspaceClusterAgent = await tx.workspaceClusterAgent.create({
       data: {
         workspaceId: workspace.id,
-      }
-    })
+      },
+    });
 
     // Generate a secure random token
     const token = randomBytes(32).toString('base64url'); // 43 characters, URL-safe
@@ -306,18 +321,20 @@ export async function provisionWorkspace({
     expiredAt.setHours(expiredAt.getHours() + 24);
 
     // Create workspace cluster agent token
-    const workspaceClusterAgentBootstrapToken = await tx.workspaceClusterAgentBootstrapToken.create({
-      data: {
-        workspaceClusterAgentId: workspaceClusterAgent.id,
-        token,
-        expiredAt
-      }
-    });
+    const workspaceClusterAgentBootstrapToken = await tx.workspaceClusterAgentBootstrapToken.create(
+      {
+        data: {
+          workspaceClusterAgentId: workspaceClusterAgent.id,
+          token,
+          expiredAt,
+        },
+      },
+    );
 
     // Update workspace cluster agent
     await tx.workspaceClusterAgent.update({
       where: { id: workspaceClusterAgent.id },
-      data: { bootstrapTokenId: workspaceClusterAgentBootstrapToken.id }
+      data: { bootstrapTokenId: workspaceClusterAgentBootstrapToken.id },
     });
 
     // Update workspace and guard on created workspace
@@ -494,7 +511,7 @@ export async function provisionWorkspace({
   //     },
   //   };
 
-  return workspaceProvisioned
+  return workspaceProvisioned;
 }
 
 /******************************************************************************
@@ -517,7 +534,7 @@ export async function getWorkspaceInternal({
     where: {
       uid: workspaceUid,
       deletedAt: null,
-    }
+    },
   });
 
   if (!workspaceExists) {
@@ -1107,7 +1124,10 @@ export async function generateBootstrapToken({
     };
   });
 
-  logger.info({ workspaceUid, agentUid: agent.uid }, 'Bootstrap token regenerated, agent status reset to PendingRegistration');
+  logger.info(
+    { workspaceUid, agentUid: agent.uid },
+    'Bootstrap token regenerated, agent status reset to PendingRegistration',
+  );
 
   return {
     workspaceUid: workspace.uid,
@@ -1129,7 +1149,7 @@ export async function registerWorkspaceClusterAgent({
   const bootstrapToken = await prisma.workspaceClusterAgentBootstrapToken.findFirst({
     where: {
       token,
-      workspaceClusterAgent: {workspace: {extWorkspaceId}}
+      workspaceClusterAgent: { workspace: { extWorkspaceId } },
     },
     include: {
       workspaceClusterAgent: {
@@ -1194,7 +1214,10 @@ export async function registerWorkspaceClusterAgent({
     });
   });
 
-  logger.info({ agentUid: agent.uid, workspaceUid: workspace.uid }, 'Agent registered successfully');
+  logger.info(
+    { agentUid: agent.uid, workspaceUid: workspace.uid },
+    'Agent registered successfully',
+  );
 
   return {
     agentUid: agent.uid,
@@ -1207,10 +1230,7 @@ export async function registerWorkspaceClusterAgent({
 /******************************************************************************
  * Agent sync - poll config and update telemetry
  *****************************************************************************/
-export async function syncAgent({
-  agentUid,
-  data,
-}: AgentSyncParams): Promise<AgentSyncResponse> {
+export async function syncAgent({ agentUid, data }: AgentSyncParams): Promise<AgentSyncResponse> {
   // Find the agent by UID
   const agent = await prisma.workspaceClusterAgent.findUnique({
     where: { uid: agentUid },
@@ -1253,7 +1273,7 @@ export async function syncAgent({
       agentVersion: data.agentVersion,
       kubernetesVersion: data.kubernetesVersion,
     },
-    'Agent sync'
+    'Agent sync',
   );
 
   return {
@@ -1263,11 +1283,11 @@ export async function syncAgent({
     description: workspace.description ?? '',
     status: workspace.status,
     workspaceApps: [], // TODO: populate from workspace apps
-    storage: {},       // TODO: populate from workspace storage config
-    network: {},       // TODO: populate from workspace network config
+    storage: {}, // TODO: populate from workspace storage config
+    network: {}, // TODO: populate from workspace network config
     createdAt: workspace.createdAt,
     createdBy: {
-      uid: '',         // TODO: resolve from workspace creator
+      uid: '', // TODO: resolve from workspace creator
       email: '',
       fullName: '',
     },

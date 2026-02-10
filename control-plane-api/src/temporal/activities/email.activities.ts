@@ -1,8 +1,9 @@
+import nodemailer from 'nodemailer';
+
 import { EmailNotificationOptions } from '@/types/notification.type';
 
-import logger from '../logger';
 import config from '../../config/config';
-import nodemailer from 'nodemailer';
+import logger from '../logger';
 
 /**
  * Sends an email using SMTP

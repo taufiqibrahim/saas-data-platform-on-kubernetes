@@ -1,8 +1,4 @@
-import {
-  PlatformProvider,
-  PlatformProviderNameEnum,
-  PlatformProviderRegion,
-} from '@prisma/client';
+import { PlatformProvider, PlatformProviderNameEnum, PlatformProviderRegion } from '@prisma/client';
 
 import { prisma } from '@/clients/prisma.client';
 import { HttpError } from '@/types/errors';

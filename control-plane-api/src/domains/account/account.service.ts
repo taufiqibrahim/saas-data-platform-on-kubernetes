@@ -92,13 +92,12 @@ export async function listAccountsInternal({
   order,
   pagination = { page: 1, limit: 10 },
 }: ListAccountsInternalParams): Promise<ListAccountsResponse> {
-
   const { page = 1, limit = 10 } = pagination;
 
   // Filtering
   const q = filters.q?.trim();
   const where: Record<string, unknown> = {
-    ...((scope === 'OWNED') && {
+    ...(scope === 'OWNED' && {
       members: {
         some: {
           principalId: principal.id,
@@ -186,12 +185,12 @@ export async function listAllAccounts({
 
   return await listAccountsInternal({
     principal,
-    scope: "ALL",
+    scope: 'ALL',
     filters,
     sort,
     order,
     pagination,
-  })
+  });
 }
 
 /******************************************************************************
@@ -215,12 +214,12 @@ export async function listOwnedAccounts({
 
   return await listAccountsInternal({
     principal,
-    scope: "OWNED",
+    scope: 'OWNED',
     filters,
     sort,
     order,
     pagination,
-  })
+  });
 }
 
 /******************************************************************************
@@ -263,7 +262,10 @@ export async function createAccountTx(
     sanitizedExtAccountId && sanitizedExtAccountId.length >= 5
       ? sanitizedExtAccountId
       : generateAccountId();
-  logger.debug({ data, sanitizedExtAccountId, extAccountId }, "Validate or generate external account ID")
+  logger.debug(
+    { data, sanitizedExtAccountId, extAccountId },
+    'Validate or generate external account ID',
+  );
 
   // Check if account exist
   const accountExists = await tx.account.findFirst({
@@ -388,7 +390,7 @@ export async function getAccountByExtId({
   principal,
   extAccountId,
 }: GetAccountParams): Promise<AccountResponse> {
-  console.log("principal.roles", principal.roles)
+  console.log('principal.roles', principal.roles);
 
   // 1. Get account
   const account = await prisma.account.findFirst({

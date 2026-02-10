@@ -236,13 +236,13 @@ function buildCaConfig(): CaConfig {
 
   switch (provider) {
     case 'step-ca':
-
       return {
         provider: 'step-ca',
         url: process.env.STEP_CA_URL || 'https://ca.saas.internal:9000',
         caCertPath: process.env.STEP_CA_ROOT || './docker/step-ca/certs/root_ca.crt',
         rootCertPath: process.env.STEP_CA_ROOT || './docker/step-ca/certs/root_ca.crt',
-        intermediateCertPath: process.env.STEP_CA_INTERMEDIATE || './docker/step-ca/certs/intermediate_ca.crt',
+        intermediateCertPath:
+          process.env.STEP_CA_INTERMEDIATE || './docker/step-ca/certs/intermediate_ca.crt',
         provisioner: process.env.STEP_CA_PROVISIONER || 'admin',
         jwkPrivateKey: process.env.STEP_CA_JWK_PRIVATE_KEY || '',
         validityDays: Number(process.env.CA_CERT_VALIDITY_DAYS) || 90,

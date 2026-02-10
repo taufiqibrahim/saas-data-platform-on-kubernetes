@@ -1,3 +1,4 @@
+import express from 'express';
 import {
   Body,
   Controller,
@@ -9,12 +10,17 @@ import {
   SuccessResponse,
   Tags,
 } from 'tsoa';
-import express from 'express';
 
-import * as WorkspaceService from '../workspace/workspace.service';
-import { AgentRegisterRequest, AgentRegisterResponse, AgentSyncRequest, AgentSyncResponse } from '../workspace/workspace.type';
-import { ValidateErrorJSON } from '../_shared/shared.type';
 import { requireMTLS } from '@/middlewares/mtls.middleware';
+
+import { ValidateErrorJSON } from '../_shared/shared.type';
+import * as WorkspaceService from '../workspace/workspace.service';
+import {
+  AgentRegisterRequest,
+  AgentRegisterResponse,
+  AgentSyncRequest,
+  AgentSyncResponse,
+} from '../workspace/workspace.type';
 
 @Route('agent')
 @Tags('Agent')
@@ -32,9 +38,7 @@ export class AgentController extends Controller {
   @Response<{ message: string }>(403, 'Agent is suspended')
   @Response<{ message: string }>(409, 'Agent already registered')
   @Response<{ message: string }>(410, 'Agent has been deleted')
-  public async registerAgent(
-    @Body() data: AgentRegisterRequest,
-  ): Promise<AgentRegisterResponse> {
+  public async registerAgent(@Body() data: AgentRegisterRequest): Promise<AgentRegisterResponse> {
     return await WorkspaceService.registerWorkspaceClusterAgent(data);
   }
 

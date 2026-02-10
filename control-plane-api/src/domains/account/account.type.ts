@@ -1,13 +1,16 @@
-import { AccountPlanEnum, RoleTypeEnum } from '@prisma/client';
-
 import { PaginationOptions } from '@/types/api.type';
 import { PrincipalAuthInfo } from '@/types/auth-middleware-types';
 
-import { CreatedByInfo, PaginationInfo } from '../_shared/shared.type';
+import { CreatedByInfo, PaginationInfo, RoleTypeEnum } from '../_shared/shared.type';
 import {
   PlatformProviderRegionResponse,
   PlatformProviderResponse,
 } from '../platform/platform.type';
+
+export enum AccountPlanEnum {
+  FREE = 'free',
+  ENTERPRISE = 'enterprise',
+}
 
 export interface AccountResponse {
   /**

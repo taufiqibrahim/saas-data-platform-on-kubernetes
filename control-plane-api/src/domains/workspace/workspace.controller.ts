@@ -17,9 +17,14 @@ import {
 
 import { authenticationMiddleware } from '@/middlewares/authentication.middleware';
 
-import * as WorkspaceService from './workspace.service';
-import { CreateWorkspaceRequestBody, GenerateBootstrapTokenResponse, ListWorkspacesResponse, WorkspaceResponse } from './workspace.type';
 import { ValidateErrorJSON } from '../_shared/shared.type';
+import * as WorkspaceService from './workspace.service';
+import {
+  CreateWorkspaceRequestBody,
+  GenerateBootstrapTokenResponse,
+  ListWorkspacesResponse,
+  WorkspaceResponse,
+} from './workspace.type';
 
 // import { PartialWorkspacePatchInput, Workspace, WorkspaceCreateInput, WorkspaceList, WorkspaceProvisioningConfig, WorkspaceProvisioningConfigList, WorkspaceProvisionConfigResponse } from './workspace.type';
 
@@ -60,7 +65,7 @@ export class WorkspaceController extends Controller {
   @Get('/{workspaceUid}')
   public async getWorkspace(
     @Request() req: express.Request,
-    @Path() workspaceUid: string
+    @Path() workspaceUid: string,
   ): Promise<WorkspaceResponse | null> {
     const result = await WorkspaceService.getWorkspace({
       principal: req.principal,
@@ -111,7 +116,7 @@ export class WorkspaceController extends Controller {
   @Response<ValidateErrorJSON>(400, 'Validation Failed')
   public async generateBootstrapToken(
     @Request() req: express.Request,
-    @Path() workspaceUid: string
+    @Path() workspaceUid: string,
   ): Promise<GenerateBootstrapTokenResponse> {
     return await WorkspaceService.generateBootstrapToken({
       principal: req.principal,

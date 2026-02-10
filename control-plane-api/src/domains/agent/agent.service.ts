@@ -36,5 +36,5 @@ spec:
                 configMapKeyRef:
                   name: agent-config
                   key: token
-`
+`;
 }
