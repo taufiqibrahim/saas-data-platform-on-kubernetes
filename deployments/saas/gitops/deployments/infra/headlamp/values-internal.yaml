@@ -1,8 +1,8 @@
 config:
   extraArgs:
-  - --oidc-skip-tls-verify
-  - --oidc-use-pkce=true
-  - --oidc-ca-file=/home/headlamp/certs/stepca-root.crt
+    - --oidc-skip-tls-verify
+    - --oidc-use-pkce=true
+    - --oidc-ca-file=/home/headlamp/certs/stepca-root.crt
   oidc:
     secret:
       create: false
@@ -32,7 +32,7 @@ volumes:
 #     secret:
 #       secretName: "kubeconfig-consumer-secret"
 env:
-  - name: KUBECONFIG 
+  - name: KUBECONFIG
     value: "/home/headlamp/.kube/config"
 ingress:
   enabled: true
@@ -40,11 +40,11 @@ ingress:
   annotations:
     # cert-manager annotation to request certificate from step-ca
     cert-manager.io/cluster-issuer: step-ca-acme
-    
+
     # NGINX specific annotations
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    
+
     # external-dns annotations for automatic DNS registration
     external-dns.alpha.kubernetes.io/hostname: headlamp.saas.internal
     external-dns.alpha.kubernetes.io/coredns-group: "g-saas"
@@ -63,3 +63,14 @@ ingress:
     - secretName: headlamp-tls
       hosts:
         - headlamp.saas.internal
+
+extraManifests:
+  - |
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: headlamp-token
+      namespace: saas-system
+      annotations:
+        kubernetes.io/service-account.name: headlamp
+    type: kubernetes.io/service-account-token
