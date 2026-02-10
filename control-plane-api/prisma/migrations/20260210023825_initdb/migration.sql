@@ -22,6 +22,9 @@ CREATE TYPE "StorageType" AS ENUM ('s3', 'gcs', 'oss');
 -- CreateEnum
 CREATE TYPE "WorkspaceStatus" AS ENUM ('PENDING', 'CREATING', 'CREATE_FAILED', 'RUNNING', 'UPDATING', 'UPDATE_FAILED', 'STOPPING', 'STOPPED', 'STOP_FAILED', 'DELETING', 'DELETE_FAILED', 'DELETED');
 
+-- CreateEnum
+CREATE TYPE "WorkspaceClusterAgentStatus" AS ENUM ('PendingRegistration', 'Active', 'Suspended', 'Deleted');
+
 -- CreateTable
 CREATE TABLE "platform_providers" (
     "id" SERIAL NOT NULL,
@@ -166,6 +169,7 @@ CREATE TABLE "workspaces" (
     "metadata" JSONB DEFAULT '{}',
     "status" "WorkspaceStatus" NOT NULL DEFAULT 'PENDING',
     "accountId" BIGINT NOT NULL,
+    "clusterAgentId" BIGINT,
     "createdById" BIGINT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -175,15 +179,44 @@ CREATE TABLE "workspaces" (
 );
 
 -- CreateTable
-CREATE TABLE "workspace_bootstrap_tokens" (
+CREATE TABLE "workspace_cluster_agents" (
     "id" BIGSERIAL NOT NULL,
     "uid" TEXT NOT NULL,
     "workspaceId" BIGINT NOT NULL,
+    "bootstrapTokenId" BIGINT,
+    "mtlsCredentialId" BIGINT,
+    "status" "WorkspaceClusterAgentStatus" NOT NULL DEFAULT 'PendingRegistration',
+    "lastPingAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "workspace_cluster_agents_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "workspace_cluster_agent_bootstrap_tokens" (
+    "id" BIGSERIAL NOT NULL,
+    "uid" TEXT NOT NULL,
+    "workspaceClusterAgentId" BIGINT NOT NULL,
     "token" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "expiredAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "workspace_bootstrap_tokens_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "workspace_cluster_agent_bootstrap_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "workspace_cluster_agent_mtls_credentials" (
+    "id" BIGSERIAL NOT NULL,
+    "uid" TEXT NOT NULL,
+    "workspaceClusterAgentId" BIGINT NOT NULL,
+    "caProvider" TEXT NOT NULL DEFAULT 'self-signed',
+    "caCert" TEXT,
+    "certSerialNumber" TEXT,
+    "certFingerprint" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "workspace_cluster_agent_mtls_credentials_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -266,6 +299,9 @@ CREATE UNIQUE INDEX "account_member_roles_accountMemberId_accountRoleId_key" ON 
 CREATE UNIQUE INDEX "workspaces_uid_key" ON "workspaces"("uid");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "workspaces_clusterAgentId_key" ON "workspaces"("clusterAgentId");
+
+-- CreateIndex
 CREATE INDEX "workspaces_accountId_extWorkspaceId_name_idx" ON "workspaces"("accountId", "extWorkspaceId", "name");
 
 -- CreateIndex
@@ -275,7 +311,19 @@ CREATE UNIQUE INDEX "workspaces_extWorkspaceId_deletedAt_key" ON "workspaces"("e
 CREATE UNIQUE INDEX "workspaces_accountId_name_deletedAt_key" ON "workspaces"("accountId", "name", "deletedAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "workspace_bootstrap_tokens_uid_key" ON "workspace_bootstrap_tokens"("uid");
+CREATE UNIQUE INDEX "workspace_cluster_agents_uid_key" ON "workspace_cluster_agents"("uid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "workspace_cluster_agents_bootstrapTokenId_key" ON "workspace_cluster_agents"("bootstrapTokenId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "workspace_cluster_agents_mtlsCredentialId_key" ON "workspace_cluster_agents"("mtlsCredentialId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "workspace_cluster_agent_bootstrap_tokens_uid_key" ON "workspace_cluster_agent_bootstrap_tokens"("uid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "workspace_cluster_agent_mtls_credentials_uid_key" ON "workspace_cluster_agent_mtls_credentials"("uid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "apps_uid_key" ON "apps"("uid");
@@ -329,7 +377,22 @@ ALTER TABLE "account_member_roles" ADD CONSTRAINT "account_member_roles_accountR
 ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_clusterAgentId_fkey" FOREIGN KEY ("clusterAgentId") REFERENCES "workspace_cluster_agents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "principals"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "workspace_bootstrap_tokens" ADD CONSTRAINT "workspace_bootstrap_tokens_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "workspace_cluster_agents" ADD CONSTRAINT "workspace_cluster_agents_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "workspace_cluster_agents" ADD CONSTRAINT "workspace_cluster_agents_bootstrapTokenId_fkey" FOREIGN KEY ("bootstrapTokenId") REFERENCES "workspace_cluster_agent_bootstrap_tokens"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "workspace_cluster_agents" ADD CONSTRAINT "workspace_cluster_agents_mtlsCredentialId_fkey" FOREIGN KEY ("mtlsCredentialId") REFERENCES "workspace_cluster_agent_mtls_credentials"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "workspace_cluster_agent_bootstrap_tokens" ADD CONSTRAINT "workspace_cluster_agent_bootstrap_tokens_workspaceClusterA_fkey" FOREIGN KEY ("workspaceClusterAgentId") REFERENCES "workspace_cluster_agents"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "workspace_cluster_agent_mtls_credentials" ADD CONSTRAINT "workspace_cluster_agent_mtls_credentials_workspaceClusterA_fkey" FOREIGN KEY ("workspaceClusterAgentId") REFERENCES "workspace_cluster_agents"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -1275,4 +1275,4 @@ paths:
             format: double
             type: number
 servers:
-  - url: http://localhost:5002/api/v1
+  - url: http://localhost:5001/api/v1
