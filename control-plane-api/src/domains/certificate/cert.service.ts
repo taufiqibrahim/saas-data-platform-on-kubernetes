@@ -190,6 +190,7 @@ class StepCaProvider implements CertProvider {
   private jwtSigningKey!: crypto.KeyObject;
   private jwtSigningKid!: string;
   private rootCaPem!: string;
+  // @ts-ignore
   private intermediateCaPem!: string;
 
   constructor(caConfig: StepCaCaConfig) {

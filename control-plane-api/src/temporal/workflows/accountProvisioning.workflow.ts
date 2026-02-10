@@ -1,7 +1,6 @@
 import { proxyActivities } from '@temporalio/workflow';
 
 import type * as AccountProvisioningActivities from '../activities/accountProvisioning.activities';
-// import type * as ProvisioningActivities from '../activities/provisioning.activities';
 import type * as EmailActivities from '../activities/email.activities';
 import { TASK_QUEUES } from '../constants';
 
@@ -42,7 +41,7 @@ export async function accountProvisioningWorkflow(
 
     return 'SUCCESS';
   } catch (err) {
-    // await provisioning.rollbackProvisioning(input.accountId);
+    await accountProvisioning.rollbackExternalAuth(input.extAccountId);
     await accountProvisioning.updateAccountStatus(input.extAccountId, 'PROVISION_FAILED');
     throw err;
   }

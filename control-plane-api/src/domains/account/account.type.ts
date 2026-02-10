@@ -7,10 +7,7 @@ import {
   PlatformProviderResponse,
 } from '../platform/platform.type';
 
-export enum AccountPlanEnum {
-  FREE = 'free',
-  ENTERPRISE = 'enterprise',
-}
+export type AccountPlanEnum = 'free' | 'enterprise';
 
 export interface AccountResponse {
   /**
@@ -36,6 +33,11 @@ export interface AccountResponse {
   updatedAt: Date;
   // metadata: any;
   createdBy: CreatedByInfo;
+}
+
+export interface AccountCreatedResponse {
+  workflowId: string;
+  account: AccountResponse;
 }
 
 export interface AccountFilters {

@@ -17,7 +17,7 @@ import { authenticationMiddleware } from '@/middlewares/authentication.middlewar
 
 import * as AccountService from '../account/account.service';
 import {
-  AccountResponse,
+  AccountCreatedResponse,
   ListAccountsResponse,
   ProvisionAccountRequestBody,
 } from '../account/account.type';
@@ -88,7 +88,7 @@ export class AdminController extends Controller {
   public async provisionAccount(
     @Request() req: express.Request,
     @Body() data: ProvisionAccountRequestBody,
-  ): Promise<AccountResponse | null> {
+  ): Promise<AccountCreatedResponse | null> {
     return await AdminService.provisionAccount({
       principal: req.principal,
       data,

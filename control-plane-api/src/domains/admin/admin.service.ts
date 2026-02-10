@@ -1,19 +1,17 @@
 import { prisma } from '@/clients/prisma.client';
-import { connectTemporalClient } from '@/clients/temporal.client';
 import { checkPermission } from '@/middlewares/authorization.middleware';
-import { TASK_QUEUES } from '@/temporal/constants';
-import { accountProvisioningWorkflow } from '@/temporal/workflows';
+import { startAccountProvisioning } from '@/temporal/temporal';
 import { HttpError } from '@/types/errors';
 
 import { DEFAULT_ACCOUNT_ROLES } from '../account/account.constant';
 import * as AccountService from '../account/account.service';
-import { AccountResponse, ProvisionAccountData } from '../account/account.type';
+import { AccountCreatedResponse, ProvisionAccountData } from '../account/account.type';
 import * as PrincipalService from '../principal/principal.service';
 
 export async function provisionAccount({
   principal,
   data,
-}: ProvisionAccountData): Promise<AccountResponse | null> {
+}: ProvisionAccountData): Promise<AccountCreatedResponse | null> {
   await checkPermission({
     principal,
     resource: {
@@ -77,19 +75,11 @@ export async function provisionAccount({
   }
 
   // Start acccount provisioning Temporal workflow
-  const temporalClient = await connectTemporalClient();
-
-  await temporalClient.workflow.start(accountProvisioningWorkflow, {
-    args: [
-      {
-        accountName: accountProvisioned.name,
-        extAccountId: accountProvisioned.extAccountId,
-        initialAccountOwnerEmail: data.initialAccountOwnerEmail,
-      },
-    ],
-    taskQueue: TASK_QUEUES.SHARED,
-    workflowId: `accountProvisioning/${data.extAccountId}/${Date.now()}`,
+  const workflowId = await startAccountProvisioning({
+    accountName: accountProvisioned.name,
+    extAccountId: accountProvisioned.extAccountId,
+    initialAccountOwnerEmail: data.initialAccountOwnerEmail,
   });
 
-  return accountProvisioned;
+  return { workflowId, account: accountProvisioned };
 }

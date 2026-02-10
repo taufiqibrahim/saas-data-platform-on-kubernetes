@@ -12,7 +12,6 @@ import YAML from 'yaml';
 
 import httpLogger from '@/config/httpLogger';
 
-import { generateBootstrapYAML } from './domains/agent/agent.service';
 import { RegisterRoutes } from './generated/routes';
 import healthRouter from './health-check';
 import { errorHandler } from './middlewares/error-handler';
@@ -93,13 +92,6 @@ app.get('/api-spec', (_req, res) => {
  */
 app.get('/docs', (_req, res) => {
   res.sendFile(path.join(__dirname, 'docs.html'));
-});
-
-// Serve the agent bootstrap YAML content
-app.get('/bootstrap', async (req, res) => {
-  const token = req.query.token as string;
-  const yaml = await generateBootstrapYAML(token);
-  res.status(200).send(yaml);
 });
 
 // General Exception handler

@@ -18,7 +18,4 @@ export interface ValidateErrorJSON {
   details: { [name: string]: unknown };
 }
 
-export enum RoleTypeEnum {
-  MANAGED_ROLE = 'MANAGED_ROLE',
-  CUSTOMER_MANAGED_ROLES = 'CUSTOMER_MANAGED_ROLES',
-}
+export type RoleTypeEnum = 'MANAGED_ROLE' | 'CUSTOMER_MANAGED_ROLES';

@@ -119,14 +119,18 @@ export class User {
    * - Default: attaches a valid Bearer token.
    * - `token: null`: sends without any Authorization header.
    * - `token: 'bad'`: sends that exact string as the Bearer value.
+   * - `query`: query params object (e.g. { page: 1, limit: 10 })
+   * - `body`: request body for POST/PUT/PATCH
    */
   async request(
     app: any,
     method: 'get' | 'post' | 'put' | 'patch' | 'delete',
     path: string,
-    options?: { token?: string | null },
+    options?: { token?: string | null; query?: Record<string, any>; body?: any },
   ) {
-    const req = request(app)[method](path);
+    let req = request(app)[method](path);
+    if (options?.query) req = req.query(options.query);
+    if (options?.body) req = req.send(options.body);
     if (options?.token === null) return req;
     const bearer = options?.token ?? (await this.getAccessToken());
     return req.set('Authorization', `Bearer ${bearer}`);

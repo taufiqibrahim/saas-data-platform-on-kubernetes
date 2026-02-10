@@ -534,10 +534,10 @@ components:
       type: object
       additionalProperties: false
     AccountPlanEnum:
+      type: string
       enum:
         - free
         - enterprise
-      type: string
     PlatformProviderResponse:
       properties:
         uid:
