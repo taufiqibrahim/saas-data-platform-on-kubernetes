@@ -1,3 +1,6 @@
+# Supporting services for local development
+# Usage: docker compose up -d
+
 x-logging: &default-logging
   driver: "json-file"
   options:
@@ -49,6 +52,11 @@ services:
     restart: always
     networks:
       - controlplane
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.5
@@ -76,9 +84,7 @@ services:
       # Clustering: Fixes the JGroups "Connection Refused" errors
       KC_CACHE: "local"
     ports:
-      - "5980:8080"
-      - "5943:8443"
-      - "5900:9000"
+      - "8080:8080"
     logging: *default-logging
     networks:
       - controlplane
@@ -107,8 +113,8 @@ services:
     container_name: cp-cerbos
     command: ["server", "--config=/config/.cerbos.yaml"]
     ports:
-      - "5092:3592"
-      - "5093:3593" # optional, gRPC
+      - "3592:3592"
+      - "3593:3593" # optional, gRPC
     volumes:
       - ./cerbos:/config:ro
     env_file:
@@ -144,7 +150,6 @@ services:
       - POSTGRES_USER=temporal
       - POSTGRES_PWD=temporal
       - POSTGRES_SEEDS=temporal-db
-      # - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CLI_ADDRESS=temporal:7233
     image: temporalio/auto-setup:1.28.0

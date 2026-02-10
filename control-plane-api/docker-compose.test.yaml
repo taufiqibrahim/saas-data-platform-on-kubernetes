@@ -25,7 +25,7 @@ services:
       POSTGRES_USER: saas
       POSTGRES_PASSWORD: saas
     ports:
-      - "5433:5432"
+      - "15432:5432"
     volumes:
       - test_pgdata:/var/lib/postgresql/data
     logging: *default-logging
@@ -73,7 +73,7 @@ services:
       KC_DB_PASSWORD: keycloak
       KC_CACHE: "local"
     ports:
-      - "5981:8080"
+      - "18080:8080"
     depends_on:
       keycloak-test-db:
         condition: service_healthy
@@ -92,10 +92,49 @@ services:
     container_name: cp-test-cerbos
     command: ["server", "--config=/config/.cerbos.yaml"]
     ports:
-      - "5094:3592"
-      - "5095:3593"
+      - "13592:3592"
+      - "13593:3593"
     volumes:
       - ./cerbos:/config:ro
     logging: *default-logging
+    networks:
+      - test
+
+  # -----------------------------------------------------------------
+  #  TEMPORAL
+  # -----------------------------------------------------------------
+  temporal-test-db:
+    container_name: cp-test-temporal-db
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    image: postgres:16
+    volumes:
+      - /var/lib/postgresql/data
+    logging: *default-logging
+    restart: always
+    networks:
+      - test
+
+  temporal-test:
+    container_name: cp-test-temporal
+    depends_on:
+      - temporal-test-db
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-test-db
+      - TEMPORAL_ADDRESS=temporal-test:7233
+      - TEMPORAL_CLI_ADDRESS=temporal-test:7233
+    image: temporalio/auto-setup:1.28.0
+    ports:
+      - 17233:7233
+    # volumes:
+      # - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      # - ./develop/temporal/init-namespaces.sh:/etc/init-namespaces.sh
+    logging: *default-logging
+    restart: always
     networks:
       - test
