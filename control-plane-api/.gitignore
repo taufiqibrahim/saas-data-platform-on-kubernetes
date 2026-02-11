@@ -148,3 +148,4 @@ build
 src/generated
 
 .env.docker
+.env.prod

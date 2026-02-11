@@ -30,8 +30,8 @@ services:
       POSTGRES_PASSWORD: saas
     ports:
       - "${CONTROL_PLANE_API_PORT:-5001}:5001"
-    # volumes:
-    #   - pgdata:/var/lib/postgresql/data
+    env_file:
+      - .env.prod
     command: 
       - sleep infinity
     logging: *default-logging

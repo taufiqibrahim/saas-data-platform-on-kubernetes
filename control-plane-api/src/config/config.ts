@@ -325,14 +325,6 @@ const config: Config = {
   smtp: smtpConfig,
   temporal: temporalConfig,
   ca: caConfig,
-
-  // masterRealm: 'master',
-  // controlPlaneClient: 'controlplane',
-  // controlPlaneRedirectURI: process.env.CONTROL_PLANE_REDIRECT_URI || 'http://localhost:3000/*',
-  // tofu: tofuConfig,
-  // workflow: workflowConfig,
-  // // Provisioning
-  // provisioningFreeTierAWS: provisioningFreeTierAwsConfig,
 };
 
 export default config;
