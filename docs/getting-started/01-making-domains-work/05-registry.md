@@ -3,23 +3,30 @@
 ## Zot
 
 ### Authentication
+
+Zot authentication is controlled through configuration file as located at `docker/zot/zot-config.json`.
+
 #### Use htpasswd
 To simplify we can use simple htpasswd for our stack.
 ```bash
 htpasswd -bBn <username> <password> >> ./docker/zot/htpasswd
 ```
+Later this htpasswd file will be mounted to container `/etc/zot/htpasswd` via [docker-compose.yaml](https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes/blob/main/docker-compose.yaml)
+
+To enable `htpasswd` authentication and configure the path to the htpasswd authentication in the zot configuration file.
+```json
+"http": {
+...
+  "auth": {
+      "htpasswd": {
+        "path": "/etc/zot/htpasswd"
+      },
+```
 
 ### Populate Zot Registry
+We have prepared an example script to populate the local registry on `scripts/prepare-local-registry.sh`.
+Feel free to modify and add more images as you need.
 
 ```bash
-crane --insecure copy ghcr.io/external-secrets/external-secrets:v1.3.2 zot.saas.internal/external-secrets/external-secrets:v1.3.2
-crane --insecure copy ghcr.io/cloudnative-pg/postgresql:18.1-system-trixie zot.saas.internal/cloudnative-pg/postgresql:18.1-system-trixie
-crane --insecure copy quay.io/jupyterhub/k8s-singleuser-sample:4.3.2 zot.saas.internal/jupyterhub/k8s-singleuser-sample:4.3.2
-crane --insecure copy quay.io/jupyterhub/k8s-hub:4.3.2 zot.saas.internal/jupyterhub/k8s-hub:4.3.2
-crane --insecure copy docker.io/hashicorp/vault:1.21.2 zot.saas.internal/hashicorp/vault:1.21.2
-crane --insecure copy registry.k8s.io/ingress-nginx/controller:v1.14.2 zot.saas.internal/ingress-nginx/controller:v1.14.2
-crane --insecure copy registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.6.6 zot.saas.internal/ingress-nginx/kube-webhook-certgen:v1.6.6
-
-crane --insecure copy quay.io/argoproj/argocd:v3.2.6 zot.saas.internal/argoproj/argocd:v3.2.6
-
+./scripts/prepare-local-registry.sh
 ```
