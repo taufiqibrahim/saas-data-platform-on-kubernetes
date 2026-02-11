@@ -16,7 +16,7 @@ FROM base-builder AS builder-prisma
 
 WORKDIR /app
 
-# # Install build dependencies
+# Install build dependencies
 RUN set -eux; \
     apt-get update -qq; \
     apt-get install -y -qq --no-install-recommends \
@@ -40,8 +40,8 @@ RUN npx ts-node tsoa-gen.ts
 
 RUN pnpm build
 
-# Verify the build output exists
-RUN ls -la /app/dist && echo "Build completed successfully"
+# Copy API docs
+RUN mkdir -p /app/dist/src/openapi && cp /app/src/openapi/swagger.yaml /app/dist/src/openapi/swagger.yaml
 
 # # ---------- Runtime ----------
 FROM node:22-slim
@@ -54,12 +54,19 @@ LABEL version="${VERSION}" \
       maintainer="taufiq.ibrahim@gmail.com" \
       description="SaaS Control Plane - typescript stack"
 
+# Install build dependencies
+RUN set -eux; \
+    apt-get update -qq; \
+    apt-get install -y -qq --no-install-recommends \
+      ca-certificates \
+      openssl \
+      ; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* \
+    echo "Runtime dependencies installed.";
+
 # Allow build-time toggle for hardening
 ARG HARDEN=true
-
-# # Copy docs to dist
-# RUN cp -rf src/docs dist/
-# RUN cp -rf src/openapi dist/
 
 # Harden the image conditionally (Debian-based)
 RUN if [ "$HARDEN" = "true" ]; then \

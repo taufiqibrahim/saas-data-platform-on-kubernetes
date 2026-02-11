@@ -24,6 +24,7 @@ build: ## Build image
 	@echo "Building $(IMAGE_NAME):$(VERSION)"
 	docker build \
 		--build-arg VERSION=$(VERSION) \
+		--progress plain \
 		-t $(IMAGE_NAME):$(VERSION) \
 		-t $(IMAGE_NAME):latest \
 		.
