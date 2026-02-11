@@ -6,7 +6,7 @@ infra:
     server: https://kubernetes.default.svc
   source:
     repoURL: https://github.com/taufiqibrahim/saas-data-platform-on-kubernetes.git
-    targetRevision: main
+    targetRevision: feat/control-plane
 headlamp:
   enabled: true
 keycloak:
