@@ -16,12 +16,32 @@ As the SaaS admin, you can login to OpenBao `saas` namespace.
 TODO
 
 Temporary list:
-```bash
-dockerio-secret
-headlamp-oidc-credentials
-keycloak-credentials
-keycloak-db-credentials
-rustfs-credentials
-step-ca-root-cert
-temporal-db-credentials
+```yaml
+dockerio-secret:
+  password:
+  username:
+
+headlamp-oidc-credentials:
+  clientID: ***********
+  clientSecret: ***********
+  issuerURL: ***********
+  scopes: ***********
+
+keycloak-credentials:
+  admin-password:
+
+keycloak-db-credentials:
+  password:
+  username:
+
+rustfs-credentials:
+  ACCESS_KEY_ID: ***********
+  ACCESS_SECRET_KEY: ***********
+
+step-ca-root-cert:
+  ca.crt: ***********
+
+temporal-db-credentials:
+  password:
+  username:
 ```
