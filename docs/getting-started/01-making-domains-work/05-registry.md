@@ -30,3 +30,5 @@ Feel free to modify and add more images as you need.
 ```bash
 ./scripts/prepare-local-registry.sh
 ```
+
+It will take a while to load depends on the number of images and the size.
