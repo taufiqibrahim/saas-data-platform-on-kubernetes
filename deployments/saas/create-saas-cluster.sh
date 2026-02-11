@@ -79,13 +79,6 @@ preflight_checks() {
     fi
     log_info "✓ kubectl available"
 
-    # Check cluster connectivity
-    if ! kubectl cluster-info >/dev/null 2>&1; then
-        log_error "Cannot connect to Kubernetes cluster."
-        exit 1
-    fi
-    log_info "✓ Kubernetes cluster reachable"
-
     # Check jq
     if ! command -v jq >/dev/null 2>&1; then
         log_error "jq not found. Please install jq first."
@@ -419,7 +412,7 @@ ensure_argocd() {
 
   log_info "Getting ArgoCD admin password..."
   ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-  log_info "ArgoCD Admin Password: ${ARGOCD_PASSWORD}"
+  export ARGOCD_PASSWORD
 }
 
 ensure_kubeconfig_consumer_secret() {
@@ -506,6 +499,7 @@ You can now use your cluster with:
 
 kubectl cluster-info --context kind-saas
 "
+log_info "ArgoCD Admin Password: ${ARGOCD_PASSWORD}"
 log_empty
 
 echo ""
@@ -514,5 +508,3 @@ echo "Check certificate: kubectl get certificate -n argocd"
 echo "Check ingress: kubectl get ingress -n argocd"
 echo "Check external-dns logs: kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns"
 echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"
-
-kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
