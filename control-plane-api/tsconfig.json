@@ -41,7 +41,7 @@
       "@middlewares/*": ["src/middlewares/*"],
       "@utils/*": ["src/utils/*"],
       "@helpers/*": ["src/helpers/*"],
-      "@prisma/*": ["prisma/*", "generated/prisma/*"],
+      "@prisma/*": ["prisma/*"],
       "@validator/*": ["src/validator/*"],
       "@templates/*": ["src/templates/*"],
       "@temporal/*": ["src/temporal/*"],

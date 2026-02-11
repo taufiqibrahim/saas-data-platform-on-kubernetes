@@ -2,7 +2,7 @@ import {prisma} from '../../src/clients/prisma.client'
 import { supportedPlatformProviders } from './platform.seed';
 import { systemPrincipals, systemRoles } from './roles.seed';
 import { apps } from './apps.seed';
-import { PlatformProviderNameEnum } from '../../generated/prisma/enums';
+import { PlatformProviderNameEnum } from '@prisma/client';
 
 
 async function seedSupportedPlatformProviders() {

@@ -71,12 +71,11 @@ Next, run this:
 # Install dependencies
 pnpm install
 
-# Initialise development (generate tsoa spec & routes)
+# Initialise development
+# migrate prisma
 npx prisma migrate
+# generate tsoa spec & routes
 pnpm dev:init
-
-# [OPTIONAL] Copy the generated swagger to docs
-cp src/openapi/swagger.yaml ../docs/static/openapi/control-plane.yaml
 
 # Installs and runs Prisma Migrate in dev mode to apply changes to the database, create a migration file if needed, and generate the Prisma client.
 npx prisma migrate dev

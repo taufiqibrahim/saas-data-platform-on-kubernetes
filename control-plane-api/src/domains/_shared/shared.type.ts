@@ -17,5 +17,3 @@ export interface ValidateErrorJSON {
   message: 'Validation failed';
   details: { [name: string]: unknown };
 }
-
-export type RoleTypeEnum = 'MANAGED_ROLE' | 'CUSTOMER_MANAGED_ROLES';

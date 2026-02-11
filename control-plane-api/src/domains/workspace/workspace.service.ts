@@ -85,7 +85,7 @@ export async function listWorkspaces({
   order,
   pagination = { page: 1, limit: 10 },
 }: ListWorkspacesParams): Promise<ListWorkspacesResponse> {
-  logger.debug(principal.email)
+  logger.debug(principal.email);
   // await checkPermission({
   //   principal,
   //   resource: {
