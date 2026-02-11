@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: /deployments/saas/gitops/deployments/infra/ingress
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: "{{ .Values.infra.source.repoURL }}"
+    targetRevision: "{{ .Values.infra.source.targetRevision }}"
+    path: deployments/saas/gitops/deployments/infra/ingress
+    directory:
+      recurse: true
+  destination:
+    server: {{ .Values.infra.destination.server }}
+    namespace: saas-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
