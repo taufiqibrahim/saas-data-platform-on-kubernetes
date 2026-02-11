@@ -615,6 +615,17 @@ components:
         - pagination
       type: object
       additionalProperties: false
+    AccountCreatedResponse:
+      properties:
+        workflowId:
+          type: string
+        account:
+          $ref: "#/components/schemas/AccountResponse"
+      required:
+        - workflowId
+        - account
+      type: object
+      additionalProperties: false
     ProvisionAccountRequestBody:
       properties:
         initialAccountOwnerEmail:
@@ -664,7 +675,7 @@ components:
             profile: Access to your profile information
             email: Access to your email
 info:
-  title: sparqd-control-plane-api
+  title: saas-control-plane-api
   description: API documentation for the control plane service
   version: 1.0.0
   license:
@@ -912,7 +923,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/AccountResponse"
+                  - $ref: "#/components/schemas/AccountCreatedResponse"
                 nullable: true
       description: Provision new account
       summary: Provision new account

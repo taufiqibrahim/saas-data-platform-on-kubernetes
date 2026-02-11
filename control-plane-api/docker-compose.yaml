@@ -1,6 +1,10 @@
 # Supporting services for local development
 # Usage: docker compose up -d
 
+# Project name
+name: cp
+
+# Logging
 x-logging: &default-logging
   driver: "json-file"
   options:

@@ -1,6 +1,10 @@
 # Minimal services for integration tests
 # Usage: docker compose -f docker-compose.test.yaml up -d
 
+# Project name
+name: cp-test
+
+# Logging
 x-logging: &default-logging
   driver: "json-file"
   options:

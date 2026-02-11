@@ -113,6 +113,13 @@ pnpm test
 docker compose -f docker-compose.test.yaml down -v
 ```
 
+### Build and Release
+
+Build image
+```bash
+make build
+```
+
 ---
 
 ## Features

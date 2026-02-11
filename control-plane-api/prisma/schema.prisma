@@ -710,7 +710,7 @@ model App {
 //    RBAC/ABAC
 // ********************************************************************************************************************
 // enum RoleType {
-//   SPARQ_MANAGED_ROLES
+//   MANAGED_ROLES
 //   CUSTOMER_MANAGED_ROLES
 // }
 

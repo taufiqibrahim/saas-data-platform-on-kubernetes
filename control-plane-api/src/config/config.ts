@@ -300,7 +300,7 @@ const caConfig = buildCaConfig();
 const listenPort = Number(process.env.LISTEN_PORT) || 5001;
 
 const appConfig: AppConfig = {
-  name: process.env.APP_NAME || 'Local SaaS',
+  name: process.env.APP_NAME || 'saas',
   baseUrl: process.env.BASE_URL || `http://localhost:${listenPort}`,
   listenPort: listenPort,
   logLevel: process.env.LOG_LEVEL || 'info',

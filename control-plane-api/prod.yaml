@@ -1,0 +1,40 @@
+# Supporting services for local development
+# Usage: docker compose up -d
+
+# Project name
+name: cp
+
+# Logging
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+networks:
+  controlplane:
+    external: true
+    driver: bridge
+    name: controlplane
+
+services:
+  # -----------------------------------------------------------------
+  #  CONTROL PLANE
+  # -----------------------------------------------------------------
+  cp-api:
+    image: zot.saas.internal/saas/control-plane:latest
+    container_name: cp-api
+    environment:
+      POSTGRES_DB: saas
+      POSTGRES_USER: saas
+      POSTGRES_PASSWORD: saas
+    ports:
+      - "${CONTROL_PLANE_API_PORT:-5001}:5001"
+    # volumes:
+    #   - pgdata:/var/lib/postgresql/data
+    command: 
+      - sleep infinity
+    logging: *default-logging
+    restart: always
+    networks:
+      - controlplane

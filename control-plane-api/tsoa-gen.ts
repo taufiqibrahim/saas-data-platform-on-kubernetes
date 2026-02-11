@@ -139,16 +139,13 @@ export function reorderPathsByTags(paths: Record<string, any>, tagOrder: string[
     // Info section
     spec: {
       info: {
-        title: 'sparqd-control-plane-api',
+        title: `${config.app.name}-control-plane-api`,
         description: 'API documentation for the control plane service',
         version: '1.0.0',
         license: {
           name: 'ISC',
         },
       },
-      // schemes: ["http"],
-      // host: "localhost:3000",
-      // basePath: "/api/v1",
     },
   };
 
