@@ -73,7 +73,10 @@ web:
       external-dns.alpha.kubernetes.io/ttl: "300"
     hosts:
       - temporal.saas.internal
-    pathType: Prefix
+    tls:
+      - secretName: temporal-tls
+        hosts:
+          - temporal.saas.internal
 
 schema:
   createDatabase:
