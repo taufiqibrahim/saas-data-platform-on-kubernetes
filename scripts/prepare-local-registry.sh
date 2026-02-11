@@ -7,6 +7,7 @@ DEST_REGISTRY="zot.saas.internal"
 IMAGES=(
   docker.io/keycloak/keycloak:26.5.2
   docker.io/postgres:18.0
+  docker.io/temporalio/admin-tools:1.29.1-tctl-1.18.4-cli-1.5.0
   ghcr.io/external-secrets/external-secrets:v1.3.2
   ghcr.io/cloudnative-pg/postgresql:18.1-system-trixie
   quay.io/jupyterhub/k8s-singleuser-sample:4.3.2
