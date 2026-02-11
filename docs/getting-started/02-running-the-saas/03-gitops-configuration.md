@@ -50,6 +50,10 @@ kubectl create secret docker-registry ghcr-secret \
 
 ### Deploy ArgoCD App of Apps Manifest
 
+We have prepared ArgoCD App of Apps manifest on `deployments/saas/bootstrap/argocd/argocd-apps-root.yaml`.
+We can use it directly or create own configuration which refer to different repository.
+
+To deploy the ArgoCD apps using the prepared manifest:
 ```bash
 kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
 ```

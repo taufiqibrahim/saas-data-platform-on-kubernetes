@@ -397,19 +397,6 @@ ensure_argocd() {
     --set global.image.repository=${LOCAL_REGISTRY_HOST}/argoproj/argocd \
     --wait
 
-  log_empty
-  log_info "Creating ArgoCD Ingress..."
-  kubectl apply -f deployments/saas/bootstrap/argocd/argocd-ingress-nginx.yaml
-
-  log_empty
-  log_info "Waiting for certificate to be issued..."
-  log_info "This may take a few minutes..."
-  kubectl wait --for=condition=ready certificate/argocd-server-tls -n argocd --timeout=300s || true
-
-  log_info "Getting LoadBalancer IP..."
-  LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  log_info "LoadBalancer IP: ${LB_IP}"
-
   log_info "Getting ArgoCD admin password..."
   ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
   export ARGOCD_PASSWORD
@@ -432,8 +419,6 @@ ensure_kubeconfig_consumer_secret() {
 # Main execution
 # -----------------------------------------------------------------------------
 log_section "SaaS Cluster Bootstrap"
-
-# 
 
 # -----------------------------------------------------------------------------
 # Defaults
@@ -504,7 +489,5 @@ log_empty
 
 echo ""
 echo -e "${GREEN}Troubleshooting Commands:${NC}"
-echo "Check certificate: kubectl get certificate -n argocd"
-echo "Check ingress: kubectl get ingress -n argocd"
 echo "Check external-dns logs: kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns"
 echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"

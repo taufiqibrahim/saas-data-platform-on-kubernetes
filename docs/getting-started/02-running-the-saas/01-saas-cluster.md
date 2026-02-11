@@ -53,6 +53,7 @@ The `create-saas-cluster.sh` script performs the following steps:
 3. **Configures trusted registry** - Sets up `zot.saas.internal` as a trusted container registry for each node
 4. **Installs CA certificates** - Copies the root CA from StepCA into each Kind node and updates the CA trust store
 5. **Restarts containerd** - Ensures the new certificates and registry configuration take effect
+6. **Deploy initial services**: Cert Manager, External Secret, External DNS, Metric Server, Ingress NGINX, CloudNative Postgres and ArgoCD.
 
 ### Environment Variables
 
