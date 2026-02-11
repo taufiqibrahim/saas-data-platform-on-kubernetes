@@ -54,6 +54,27 @@ admintools:
     tag: "1.29.1-tctl-1.18.4-cli-1.5.0"
     pullPolicy: IfNotPresent
 
+web:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      # cert-manager annotation to request certificate from step-ca
+      cert-manager.io/cluster-issuer: step-ca-acme
+      
+      # NGINX specific annotations for ArgoCD
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      
+      # external-dns annotations for automatic DNS registration
+      external-dns.alpha.kubernetes.io/hostname: temporal.saas.internal
+      external-dns.alpha.kubernetes.io/coredns-group: "g-saas"
+      external-dns.alpha.kubernetes.io/ttl: "300"
+    hosts:
+      - temporal.saas.internal
+    pathType: Prefix
+
 schema:
   createDatabase:
     enabled: false
