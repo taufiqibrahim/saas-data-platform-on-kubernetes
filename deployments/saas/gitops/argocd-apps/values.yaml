@@ -12,4 +12,4 @@ headlamp:
 keycloak:
   enabled: true
 temporal:
-  enabled: false
+  enabled: true
