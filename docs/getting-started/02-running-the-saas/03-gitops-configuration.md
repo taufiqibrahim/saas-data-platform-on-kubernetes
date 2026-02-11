@@ -47,3 +47,9 @@ kubectl create secret docker-registry ghcr-secret \
   --docker-password=<github-token> \
   -n <your-app-namespace>
 ```
+
+### Deploy ArgoCD App of Apps Manifest
+
+```bash
+kubectl apply -f deployments/saas/bootstrap/argocd/argocd-apps-root.yaml
+```

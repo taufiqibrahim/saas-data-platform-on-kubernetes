@@ -6,6 +6,36 @@
 go install sigs.k8s.io/kind@v0.31.0
 ```
 
+## Provision OpenBao Vault Namespace
+
+> ⚠️ Important:
+> **OpenBao might be on unsealed state**
+> OpenBao vault by default unsealed after container/system restart.
+> 
+You will need to unseal it first before continue.
+> 
+Go to https://bao.saas.internal and input the three required unseal keys.
+
+This process will produce:
+- OpenBao namespace for the SaaS
+- OpenBao policy and token for the SaaS
+
+```bash
+export OPENBAO_ROOT_TOKEN=<root-token>
+export TENANT_ID=saas
+
+./scripts/generate-namespaced-keyvault.sh
+
+# Example output
+# ✅ Tenant provisioning complete!
+
+# ==========================================
+# Tenant ID: tenant-0
+# Namespace: tenant-0
+# Token: s.wELcopUNPOOVlOAWvkjgHzkK.zd1Sbr
+# ==========================================
+```
+
 ## Creating SaaS Cluster
 
 We have prepared a shell script to automate the Kind cluster creation.
@@ -16,10 +46,10 @@ In real production deployment, the SaaS cluster will be prepared by using cloud-
 The `create-saas-cluster.sh` script performs the following steps:
 
 1. **Validates prerequisites** - Checks that the root CA certificate exists at the specified path
-2. **Creates a Kind cluster** with the following configuration:
-   - One control-plane node
-   - One or more worker node labeled with `NodeGroupType: default`
-   - IPv4 networking with the default CNI
+2. **Creates a Kind cluster**  -- if not exist -- with the following configuration:
+      - One control-plane node
+      - One or more worker node labeled with `NodeGroupType: default`
+      - IPv4 networking with the default CNI
 3. **Configures trusted registry** - Sets up `zot.saas.internal` as a trusted container registry for each node
 4. **Installs CA certificates** - Copies the root CA from StepCA into each Kind node and updates the CA trust store
 5. **Restarts containerd** - Ensures the new certificates and registry configuration take effect
@@ -28,19 +58,19 @@ The `create-saas-cluster.sh` script performs the following steps:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TENANT_VAULT_TOKEN` | | **Required** Vault token |
-| `TENANT_ID` | `saas` | Tenant ID |
-| `CLUSTER_NAME` | `saas` | Cluster name |
-| `ROOT_CA_PATH` | `./docker/step-ca/certs/root_ca.crt` | Path to the root CA certificate file |
-| `REGISTRY_HOST` | `zot.saas.internal` | Hostname of the trusted container registry |
+| **TENANT_VAULT_TOKEN** | | **`Required`** Vault token |
+| **TENANT_ID** | `saas` | `Optional` Tenant ID |
+| **CLUSTER_NAME** | `saas` | `Optional` Cluster name |
+| **ROOT_CA_PATH** | `./docker/step-ca/certs/root_ca.crt` | `Optional` Path to the root CA certificate file |
+| **REGISTRY_HOST** | `zot.saas.internal` | `Optional` Hostname of the trusted container registry |
 
-Usage
+### Usage
 
 ```bash
 ./deployments/saas/create-saas-cluster.sh
 ```
 
-Example
+### Example
 
 ```bash
 # Using default settings

@@ -20,8 +20,8 @@ nav:
       - Running the SaaS:
           - getting-started/02-running-the-saas/index.md
           - getting-started/02-running-the-saas/01-saas-cluster.md
-          - getting-started/02-running-the-saas/02-configure-gitops.md
-          - getting-started/02-running-the-saas/03-configure-registry.md
+          - getting-started/02-running-the-saas/02-secrets-configuration.md
+          - getting-started/02-running-the-saas/03-gitops-configuration.md
       - Adding Tenants:
           - getting-started/01-making-domains-work/index.md
           - getting-started/03-adding-your-first-tenant/01-tenant-cluster.md
